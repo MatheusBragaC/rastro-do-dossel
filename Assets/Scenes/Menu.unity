@@ -2207,9 +2207,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "Integrantes: a preencher pela equipe\nTurma e professor: a preencher pela
-    equipe\n\nModelos provis\xF3rios: formas primitivas do Unity\nAssets de terceiros:
-    a registrar com origem e licen\xE7a"
+  m_Text: "Integrantes: Matheus Braga, Moruan Mattar, N\xEDcolas Muciaccia e N\xEDcolas Ramos\nTurma e professor: a preencher pela equipe\n\nModelos provis\xF3rios: formas primitivas do Unity\nEfeitos sonoros: gerados pela equipe\nAssets de terceiros: a registrar com origem e licen\xE7a"
 --- !u!222 &2139989618
 CanvasRenderer:
   m_ObjectHideFlags: 0

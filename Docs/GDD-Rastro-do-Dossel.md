@@ -4,17 +4,30 @@ Game Design Document
 
 **Trabalho de Game Development — Ciência da Computação**
 
-**Versão:** 0.5 — adaptação ao GDD_Template.Rev01 e ao Trabalho_2026-2.
+**Versão:** 0.6 — atualização com o que foi implementado e testado na primeira entrega.
 
-**Integrantes:** a preencher pela equipe. **Turma e professor:** a preencher pela equipe.
+**Integrantes:** Matheus Braga, Moruan Mattar, Nícolas Muciaccia e Nícolas Ramos. **Turma e professor:** a preencher pela equipe.
 
-**Data desta revisão:** 9 de outubro de 2026.
+**Data desta revisão:** 13 de outubro de 2026.
 
 **Proposta:** jogo de plataforma em 3D, visto lateralmente em terceira pessoa, sobre um guerrilheiro e guia que atravessa uma selva armadilhada para restabelecer a comunicação entre comunidades.
 
 **Plano de entrega:** cinco níveis no jogo final; somente o nível 1 implementado no primeiro bimestre. O controle do personagem concentra o trabalho de jogabilidade. Os demais níveis reutilizam os mesmos sistemas.
 
-**Estado do documento:** projeto de desenvolvimento. Os protótipos da pasta da equipe foram consultados como referência de programação. As funcionalidades descritas para Rastro do Dossel ainda precisam ser implementadas e testadas; este GDD não certifica uma build pronta.
+**Estado do documento:** o nível 1 está implementado e jogável do menu à tela de conclusão, com formas provisórias no lugar dos modelos de terceiros. As seções de mecânica, interface, base técnica e documentação das funções descrevem o que existe no projeto. Os níveis 2 a 5, o Terrain, o NPC e o NavMesh continuam como planejamento do segundo bimestre. O quadro abaixo resume a situação; a seção "Verificação de atendimento ao enunciado" detalha cada item.
+
+| Frente | Situação em 13/10/2026 |
+|---|---|
+| Controle do Nilo, câmera e física | Implementado e testado no Editor |
+| Nível 1: perigos, estação, saída, tutorial e falas | Implementado e testado no Editor |
+| Menu, pausa, falha com Reiniciar e conclusão parcial | Implementado e testado no Editor |
+| Conceitos dos tutoriais (Translate, AddForce, rotação, torque, vetor de prefabs, tags) | Implementado |
+| Animações, partículas e sons | Implementado (personagem e efeitos provisórios) |
+| 70 assets por nível | Pendente: catálogo pronto, nenhum modelo de terceiros importado |
+| Teste completo com teclado no computador do laboratório | Pendente |
+| Níveis 2 a 5, Terrain, NPC, NavMesh, pós-processamento | Segundo bimestre |
+
+**Repositório:** o projeto Unity, este GDD e o catálogo de assets estão no repositório privado da equipe no GitHub (MatheusBragaC/rastro-do-dossel).
 
 **Organização:** a história de Nilo e sua relação com as cinco fases vêm primeiro. Em seguida estão as lentes de design, a visão de jogo e as especificações do modelo. Ao final, o documento relaciona as exigências acadêmicas, os recursos e as entregas.
 
@@ -132,7 +145,9 @@ O mundo usa um recorte fictício de floresta e comunidades. Nomes, conflito e pe
 
 **Aparência e habilidades:** adulto, roupa de campo simples, mochila compacta, rádio visível e lenço de identificação. A silhueta precisa continuar legível quando salta ou se abaixa. Sabe caminhar, correr, pular, deslizar e observar o momento de atravessar. Não há habilidades desbloqueáveis.
 
-**Animações previstas:** parado, caminhada, corrida, salto, queda, aterrissagem, deslize, interação e falha. Uma animação curta pode servir para várias interações. Na primeira etapa, usar transições simples e assets autorizados; na final, melhorar encaixe, velocidade e efeitos.
+**Modelo da primeira entrega:** o Nilo foi montado pela equipe com primitivas do Unity, no visual de guerrilheiro da selva: chapéu de selva verde-oliva, camisa camuflada com colete, calça cáqui, botas, cinto com cantil, lenço laranja de identificação e mochila com saco de dormir, rádio, antena e LED. Não carrega arma. Braços e pernas têm pivô no ombro e no quadril para as animações. O laranja do lenço destaca o personagem do fundo verde e marrom. Fica no prefab `Assets/Prefabs/Nilo.prefab`.
+
+**Animações implementadas:** parado, caminhada, corrida, salto, queda, deslize, interação e falha, criadas pela equipe em `Assets/Animations` e controladas por `Nilo.controller`. Caminhada e corrida balançam braços e pernas em oposição; a interação inclina o tronco e estende o braço direito; a falha derruba o Nilo para trás. A aterrissagem é representada pela poeira e pelo som de pouso, sem clipe próprio. Na entrega final, melhorar encaixe, velocidade e efeitos, ou trocar por um modelo com rig, se o professor autorizar.
 
 ### Mara
 
@@ -232,7 +247,9 @@ O personagem utiliza Rigidbody e colisor de cápsula, com profundidade e rotaç�
 
 O conceito Translate, exigido nos tutoriais, será demonstrado pelo controlador de um sinalizador sem Rigidbody dinâmico, deslocado entre limites conhecidos numa área segura. Obstáculos com colisão móvel usarão uma solução coerente com o sistema físico escolhido. AddForce será empregado no salto. A rotação aparece na orientação visual de Nilo e num sinalizador do posto. AddTorque movimenta pequenos detritos físicos ao abrir a caixa de ferramentas.
 
-Valores iniciais para prototipação: caminhar a 3 unidades por segundo; correr a 5; salto com impulso equivalente a cerca de 6 unidades por segundo de velocidade vertical; gravidade de 12 unidades por segundo ao quadrado; deslize de 0,55 segundo. São hipóteses de ajuste para uma cápsula de aproximadamente 1,8 unidade de altura, não resultados medidos.
+Valores implementados: caminhar a 3 unidades por segundo; correr a 5; salto com 6 unidades por segundo de velocidade vertical, aplicado com `AddForce` em `ForceMode.VelocityChange` para não depender da massa; gravidade de 12 unidades por segundo ao quadrado, definida uma vez nas configurações de física do projeto; deslize de 0,55 segundo a 5,5 unidades por segundo. A cápsula tem 1,8 unidade de altura e 0,35 de raio, com o pivô nos pés, e baixa para 0,9 no deslize. O Rigidbody trava rotação e profundidade (eixo Z) e usa um material sem atrito para não grudar em paredes. Todos os valores ficam editáveis no Inspector do Nilo.
+
+Medições feitas no Editor em 9/10/2026: caminhada a 3,00 unidades por segundo e deslize de 2,97 unidades de distância, contra 3,0 previstas. A altura e o alcance do salto não foram medidos com instrumento; foram confirmados na prática, saindo do fosso de 1 unidade e passando o vão de 1,8 unidade correndo.
 
 Com esses valores ideais e piso na mesma altura, a trajetória teria cerca de um segundo de voo e alcance aproximado de cinco unidades correndo. Os primeiros vãos devem ficar muito abaixo desse limite, entre 1,5 e 2 unidades. A colisão, o tamanho da cápsula e a altura de pouso precisam ser considerados em testes reais antes de fixar as distâncias.
 
@@ -244,11 +261,15 @@ O salto só é autorizado com apoio válido sob os pés. Encostar de lado num tr
 
 A altura não depende de quanto tempo a tecla fica pressionada. O personagem pode ajustar o movimento horizontal durante o salto, com velocidade previsível. A animação de queda começa quando a velocidade vertical muda de sentido. O pouso restaura o estado de chão e produz um efeito discreto de poeira ou folhas.
 
+**Como foi implementado:** a consulta de chão lança uma esfera curta para baixo a partir da base da cápsula, só contra a camada Ground, e aceita superfícies com normal vertical acima de 0,7. Enquanto o Nilo sobe, nada conta como chão. Para o controle parecer justo, o salto tem duas tolerâncias de 0,1 segundo: ainda vale logo depois de sair da borda e vale se Espaço for apertado pouco antes do pouso. Os testes confirmaram que encostar de lado num bloco em pleno ar não habilita salto e que manter Espaço pressionado não repete o salto.
+
 ### Deslize
 
 O deslize reduz a altura e ajusta o centro do colisor por um intervalo curto. Só começa no chão e não concede invulnerabilidade. O personagem mantém uma velocidade horizontal definida na direção em que estava olhando. Apertar novamente durante a ação não prolonga indefinidamente o tempo.
 
 Ao terminar, o sistema consulta o espaço acima. Se houver um galho, mantém a postura baixa até poder levantar e permite sair da passagem. Esse cuidado evita que o colisor normal reapareça dentro de um obstáculo. A animação precisa representar a postura; o controle não deve esperar que uma animação termine para reconhecer uma colisão fatal.
+
+**Como foi implementado e testado:** abaixado, o Nilo não salta e caminha só em velocidade de caminhada. A consulta de espaço acima testa a cápsula em pé contra tudo, menos a própria camada do Nilo e a camada dos detritos decorativos. No teste, um deslize iniciado 2,5 unidades antes do galho terminou embaixo dele; o Nilo continuou abaixado, recusou o salto e, com D pressionado, saiu andando e levantou depois do galho.
 
 ### Armadilhas e falha
 
@@ -260,9 +281,13 @@ Ao terminar, o sistema consulta o espaço acima. Se houver um galho, mantém a p
 
 Contato fatal desativa a entrada de jogo, dispara uma animação ou pose curta, reproduz som e partículas e abre o painel de falha. A função de falha ignora chamadas seguintes enquanto o estado já estiver encerrado. Não há pontos de vida, cura ou perda de objetos entre tentativas.
 
+**Como foi implementado:** o fosso tem uma zona fatal (trigger) entre as estacas e o fundo. O galho baixo é um obstáculo sólido, não fatal: bloqueia quem tenta passar em pé. O tronco móvel é um pilão suspenso que desce e sobe na vertical, porque na câmera ortográfica um movimento em profundidade não seria legível. O ciclo é fixo: 1,8 segundo erguido (passagem aberta), 0,35 segundo descendo, 0,6 segundo embaixo e 0,35 segundo subindo. Um aviso sonoro toca quando ele começa a descer. Uma zona de queda abaixo de todo o mapa também encerra a tentativa, para nenhuma queda ficar sem fim.
+
 ### Objetos interações e economia
 
 A estação de cada nível possui um objeto de ação ambiental, um equipamento tecnológico e um indicador. O jogador entra na área, vê “E — realizar ação”, pressiona E e observa a mudança. O evento marca a estação como concluída e atualiza o objetivo. Acionamentos repetidos não duplicam progresso ou efeitos.
+
+**Como foi implementado:** estação e terminal de saída herdam do mesmo componente base (`Interactable`), que detecta o Nilo por distância (1,8 unidade), mostra o aviso e chama a ação ao apertar E. A estação troca objetos ativos e inativos (tampa fechada por aberta, portão fechado por aberto, LED vermelho por verde) e dispara um evento configurável no Inspector, usado para os detritos, a poeira e o som. Quando a ação tem efeito, o Nilo toca a animação de interação. O aviso de um objeto só é apagado por ele mesmo, para dois objetos próximos não apagarem o aviso um do outro.
 
 O módulo transmissor acompanha Nilo como parte de sua mochila até a antena. Não pode ser perdido, vendido ou lançado. Resíduos e ferramentas não exigem um inventário: uma interação agrupa a tarefa em uma animação curta e muda o estado do cenário.
 
@@ -272,7 +297,7 @@ Não existe economia monetária, loja ou pontuação competitiva. O retorno ao j
 
 O conflito com a Vigília ocorre por evasão das armadilhas. Não há ataque do jogador, munição ou mira. Guardas de fundo não bloqueiam o percurso e não entram na área jogável. Isso permite concentrar o polimento nos movimentos de Nilo.
 
-As opções previstas são volume geral e retorno ao menu. Legendas ficam habilitadas. Remapeamento de teclas e suporte a controle são melhorias posteriores, sem compromisso na entrega atual. A pausa interrompe os perigos e a contagem dos temporizadores de jogo.
+As opções previstas são volume geral e retorno ao menu. Legendas ficam habilitadas. Na primeira entrega, o retorno ao menu existe na pausa, na falha e na conclusão; o controle de volume ainda não foi implementado. Remapeamento de teclas e suporte a controle são melhorias posteriores, sem compromisso na entrega atual. A pausa interrompe os perigos e a contagem dos temporizadores de jogo.
 
 A partida mantém a fase atual somente durante a sessão. Não haverá salvamento persistente de campanha na primeira versão. Sair do aplicativo inicia uma nova campanha na próxima execução. A tela final oferece jogar novamente. Um seletor restrito de cenas pode existir na versão de desenvolvimento para a apresentação, separado da interface final.
 
@@ -315,6 +340,18 @@ Saída de Várzea Alta → área de caminhada e corrida → raiz baixa → prime
 **Assets locais adicionais:** portão de Várzea Alta, marco de treinamento, árvore com marca de Nilo, caixa de ferramentas aberta e placa do viveiro. Utilizam IDs N1-01 a N1-05. O catálogo comum recebe prefixo N1 na planilha de uso da cena.
 
 **Critérios de conclusão da etapa:** realizar toda a fase pelo teclado; acionar a estação uma única vez; visualizar o objetivo atualizado; encontrar Reiniciar após falhar; concluir a demonstração pelo terminal. Nenhum conceito obrigatório deve depender de entrar num menu oculto ou de uma explicação oral durante a apresentação.
+
+**Como o nível 1 foi montado:** a cena é `Assets/Scenes/Nivel1_TrilhaEncoberta.unity`, com cerca de 106 unidades de comprimento e uma unidade por metro. As posições abaixo são as da cena.
+
+| Trecho | Posição (X) | O que existe |
+|---|---|---|
+| A | −6 a 20 | Início em −2,5 sob o portão de Várzea Alta; fala de abertura da Mara; placa e aviso de controles; marco amarelo em 8; raiz baixa em 14 com aviso de salto |
+| B | 20 a 30 | Árvore com a marca antiga em 23,5 e a fala do Nilo em 21; placa de perigo; fosso com estacas de 28 a 29,8 (1,8 de vão) |
+| C | 30 a 60 | Aviso de deslize em 37; galhos baixos de 42 a 44 e de 48 a 50; recuo seguro com aviso em 52,5; tronco móvel em 57 |
+| D | 60 a 75 | Segundo fosso de 64 a 65,8; galho baixo de 71 a 73, com cerca de 5 unidades de chão livre depois do pouso |
+| E | 80 a 106 | Área segura do posto; estação do viveiro em 88 (caixa, portão das mudas e sensor); sinalizador no cabo entre 90,3 e 95,7; terminal de saída em 97; paredão em 106,5 |
+
+As falas de abertura e da marca antiga seguem o roteiro deste GDD. A mensagem ao concluir a estação ("Viveiro liberado. Sensor de passagem ligado." e a resposta curta da Mara) foi escrita durante a implementação e deve ser revisada pela equipe. O tempo de travessia ainda não foi cronometrado; pelos valores de velocidade, só o deslocamento leva de 20 a 35 segundos, então a meta de 2 a 3 minutos por nível deve ser revista depois do teste com colegas.
 
 ### Nível 2 Margem ferida detalhado
 
@@ -396,6 +433,8 @@ O menu inicial oferece Jogar, Controles, Créditos e Sair. A pausa oferece Conti
 
 Legendas têm fundo simples com contraste e nome do falante. Mensagens de ajuda não dependem somente de cor: tecla e ícone acompanham o texto. Sons de alerta também têm sinais visuais. A primeira versão não exige gravação de voz para ser compreendida.
 
+**Como foi implementado:** a interface usa uGUI com texto da fonte padrão do Unity. O HUD mostra nome do nível, objetivo e "Estação 0/1" no canto superior esquerdo; o aviso "E — …" aparece em amarelo no centro inferior; falas e avisos de tutorial aparecem numa caixa escura no rodapé e somem sozinhos, sem pausar o jogo. O menu inicial (`Assets/Scenes/Menu.unity`) tem Jogar, Controles, Créditos e Sair. Pausa, falha e conclusão são painéis escuros sobre a fase, com os botões descritos acima; a legenda some quando um desses painéis abre. Os ícones de tecla nas mensagens ainda não existem: hoje o texto nomeia a tecla.
+
 ### Fluxo gráfico de telas
 
 MENU → JOGAR → NÍVEL ATUAL → CONCLUSÃO
@@ -423,6 +462,8 @@ O acompanhamento usa deslocamento suave e limites por fase, sem controle manual 
 **Música:** uma faixa discreta ou ambiente musical simples, com volume baixo durante os diálogos. Uma mudança curta acompanha a conclusão. A licença e a origem de cada áudio devem constar nos créditos e no registro de assets.
 
 **Partículas do primeiro bimestre:** poeira ao pousar, folhas no deslize, pedrinhas ou lascas ao abrir a caixa e um efeito curto de impacto na falha. A explosão pedida como exemplo nos tutoriais pode ser representada por uma pequena dispersão de poeira e detritos, sem violência gráfica.
+
+**Implementado na primeira entrega:** as quatro partículas acima existem e foram configuradas pela equipe (poeira de pouso, folhas de deslize, impacto de falha e poeira da caixa, que acompanha os detritos). Os oito efeitos sonoros (salto, pouso, passos, deslize, falha, caixa, estação concluída e aviso do tronco) foram sintetizados pela equipe com o script `Ferramentas/gerar_sons.py`, sem arquivos de terceiros. Não há música nem som ambiente ainda.
 
 **Partículas da entrega final:** a equipe cria e configura os próprios sistemas de poeira, folhas, fumaça leve e faísca do equipamento. Não basta importar um efeito pronto e descrevê-lo como autoral. Guardar capturas do Inspector e uma breve descrição da configuração para demonstrar o trabalho.
 
@@ -532,6 +573,8 @@ A planilha de auditoria terá uma linha por ID e as colunas categoria, recurso, 
 
 O PDF não define precisamente se “assets” significa recursos distintos, instâncias ou outro critério. A contagem acima adota uma leitura conservadora. A equipe deve validar o critério com o professor no início e ajustar o catálogo se necessário. Os totais deste GDD são metas; não são uma auditoria de cenas já construídas.
 
+**Situação em 13/10/2026:** o catálogo com um recurso gratuito para cada ID de V01 a A05, com link, licença e polígonos, está em `Docs/catalogo-assets.html`. A página gera a planilha de auditoria com as colunas desta seção. Nenhum modelo de terceiros foi importado ainda: a cena do nível 1 usa formas primitivas montadas pela equipe, que não entram na contagem. O catálogo evita modelos acima de 500 mil polígonos e explosivos; bananeira, cipó e bromélia ainda não têm fonte CC0 confirmada. Antes de importar, a equipe precisa confirmar com o professor o critério de contagem e as fontes aceitas, e instalar o Git LFS no repositório.
+
 ### Terrain e dez camadas de textura
 
 Na entrega final, cada nível terá Terrain modelado e pintado pela equipe, integrado à composição da fase. O caminho pode utilizar colisores simples para manter o salto consistente, enquanto o Terrain forma encostas, margens, depressões e fundos. Não deixar um plano padrão como único terreno final.
@@ -552,11 +595,11 @@ Na entrega final, aplicar pós-processamento moderado por um Volume: ajuste de c
 
 ### Plataforma e versão
 
-O projeto usará Unity 6 com template Universal 3D, URP, conforme o enunciado. A versão indicada no PDF é **6000.0.8f1**. Os protótipos consultados possuem registros de **6000.0.80f1** e **6000.5.7f1**, que são versões diferentes. Criar o novo projeto na versão do laboratório e confirmar sua abertura lá antes de investir em arte e pacotes.
+O projeto usa Unity 6 com template Universal 3D, URP, conforme o enunciado. A versão indicada no PDF é **6000.0.8f1**. O projeto foi criado na **6000.0.80f1**, a versão 6.0 LTS instalada nas máquinas da equipe; os protótipos consultados também registram 6000.0.80f1 e 6000.5.7f1. É provável que "6000.0.8f1" no PDF seja a mesma 6000.0.80f1, mas isso ainda precisa ser confirmado abrindo o projeto no computador do laboratório antes de investir em arte e pacotes.
 
 Não abrir e salvar os projetos de estudo numa versão mais antiga como forma de migração. Preservar os originais e transferir somente recursos autorizados e código adaptado para o novo projeto. Fixar a versão no ProjectVersion.txt e manter o manifesto e o arquivo de resolução de pacotes junto da entrega.
 
-A linguagem será C#. A entrada seguirá o padrão do Input System que a equipe já praticou, usando versões compatíveis com o editor escolhido. O módulo de navegação da etapa final deve ser instalado e validado no mesmo ambiente. Este GDD define o plano; a compatibilidade dos pacotes ainda precisa ser verificada no projeto novo.
+A linguagem é C#. A entrada usa o Input System (o projeto está configurado só com o sistema novo): os scripts leem o teclado com `Keyboard.current`, o que dispensa configurar ações no Inspector. A interface usa o `InputSystemUIInputModule`. O pacote AI Navigation já está instalado para o NavMesh da etapa final. O pacote MCP for Unity também está no projeto: é uma ferramenta de desenvolvimento usada para automatizar o Editor e não faz parte do jogo.
 
 ### O que os projetos existentes mostram
 
@@ -570,15 +613,17 @@ A linguagem será C#. A entrada seguirá o padrão do Input System que a equipe 
 
 A análise foi feita nos scripts e arquivos de cena; não houve execução dessas builds nesta revisão. Esses materiais demonstram o repertório de estudo e não comprovam que Rastro do Dossel esteja implementado. O deslize, as interações, a organização das cinco fases e o NPC final ainda exigem trabalho próprio.
 
-### Componentes planejados
+### Componentes implementados
 
-**PlayerController:** entrada, estado físico, salto, deslize e falha do personagem. **PlayerFeedback:** animação, som e partículas de Nilo. **FollowCamera:** acompanhamento e limites. **GameManager:** estado da partida, reinício e transição de cenas.
+Todos os scripts estão em `Assets/Scripts`. Os nomes seguem o planejamento da versão 0.5, com dois acréscimos: `Interactable`, base comum da estação e do terminal, e `MainMenu`, a tela inicial.
 
-**Hazard:** contato fatal e configuração comum. **MovingHazard:** ciclo do tronco. **InteractableStation:** interação ambiental e tecnológica, atualização visual e estado concluído. **LevelExit:** valida objetivo e solicita transição. **DebrisSpawner:** vetor de prefabs, índice aleatório, força, torque e descarte.
+**PlayerController:** entrada, estado físico, salto e deslize do Nilo. **PlayerFeedback:** parâmetros do Animator, sons, partículas e animações de interação e falha. **FollowCamera:** acompanhamento suave com limites. **GameManager:** estado da partida, HUD, pausa, falha, reinício e transição de cenas.
 
-**TutorialTrigger:** aviso contextual. **SceneryMotion:** Translate e rotação de sinalizadores. **NpcRoute:** navegação curta de Ivo, apenas na etapa final. Usar componentes pequenos, prefabs configuráveis e referências explícitas, evitando um script diferente para cada fase.
+**Hazard:** contato fatal. **MovingHazard:** ciclo do tronco móvel com aviso sonoro. **Interactable:** proximidade, aviso e tecla E. **InteractableStation:** estação ambiental e tecnológica. **LevelExit:** terminal que valida o objetivo e conclui a fase. **DebrisSpawner:** vetor de prefabs, sorteio, força, torque e descarte. **TutorialTrigger:** avisos e falas por zona. **SceneryMotion:** Translate e rotação do sinalizador. **MainMenu:** painéis do menu inicial. **NpcRoute** fica para a etapa final, com o Ivo.
 
-Tags planejadas: Player, Ground, Hazard, Interactable e LevelExit. Camadas de física separam terreno, jogador, perigos, cenário sem colisão e área do NPC. Tags identificam papéis; layers controlam consultas e colisões. Revisar nomes para evitar divergências entre Inspector e código.
+Prefabs: `Nilo` e os três detritos (`Detrito_Lasca`, `Detrito_Pedrinha`, `Detrito_Parafuso`) em `Assets/Prefabs`.
+
+Tags em uso: Player, Ground, Hazard, Interactable e LevelExit. Camadas: Player, Ground (chão que habilita salto), Hazard (zonas fatais) e Debris (detritos decorativos, que não colidem com o Nilo). A camada do NPC entra na etapa final.
 
 ### Hardware desempenho e rede
 
@@ -590,65 +635,95 @@ Não há servidor, login, multiplayer ou conexão obrigatória na partida. Rede 
 
 ## Documentação das funções
 
-### Padrão obrigatório de registro
+### Padrão de registro
 
-O enunciado pede documentação de cada função: finalidade, argumentos de entrada, retorno e o que acontece no corpo. A equipe registrará esses itens junto ao código e manterá este catálogo coerente com a implementação. Funções do ciclo de vida da Unity e métodos privados também entram na revisão.
-
-Os contratos a seguir são **planejados**. Nomes, tipos e divisão podem mudar durante a programação, desde que a documentação final acompanhe o código real. Ainda não representam funções existentes no projeto novo. Um método que retorna void deve declarar explicitamente que não devolve valor e descrever os efeitos que produz.
+O enunciado pede documentação de cada função: finalidade, argumentos de entrada, retorno e o que acontece no corpo. Cada função do projeto tem esse registro em comentário logo acima dela, no próprio script. Esta seção repete o catálogo para leitura fora do código e corresponde aos scripts da primeira entrega em 13/10/2026. Funções do ciclo de vida da Unity (Awake, Update, FixedUpdate, LateUpdate, OnTriggerEnter) e métodos privados também estão incluídos. Ao alterar um script, atualizar o comentário e esta seção juntos.
 
 ### Controle e apresentação do personagem
 
-**PlayerController.Awake()** — Finalidade: obter componentes e guardar dimensões originais do colisor. Entradas: nenhuma. Retorno: void. Corpo previsto: buscar Rigidbody e CapsuleCollider, validar referências e preparar o estado inicial; informar no Console qualquer configuração ausente.
+**PlayerController.Awake()** — Finalidade: obter componentes e guardar as dimensões originais do colisor. Entradas: nenhuma. Retorno: void. Corpo: busca Rigidbody e CapsuleCollider, trava rotação e profundidade, liga a interpolação e avisa no Console se a máscara de chão estiver vazia.
 
-**PlayerController.Update()** — Finalidade: ler ações do teclado e registrar pedidos de salto, deslize e interação. Entradas: nenhuma, utilizando as ações configuradas. Retorno: void. Corpo: verificar se a partida aceita controle, ler direção e corrida e armazenar comandos para o processamento adequado, sem duplicar impulsos.
+**PlayerController.Update()** — Finalidade: ler o teclado e registrar pedidos de movimento, corrida, salto e deslize. Entradas: nenhuma, usa `Keyboard.current`. Retorno: void. Corpo: lê A/D ou setas, Shift, Espaço e Ctrl/S; guarda salto e deslize como pedidos para o passo de física; define o lado para onde o Nilo olha e gira o visual na direção do movimento. Sem controle, zera a entrada.
 
-**PlayerController.FixedUpdate()** — Finalidade: atualizar a movimentação física. Entradas: nenhuma. Retorno: void. Corpo: consultar o chão, aplicar movimento horizontal coerente com o Rigidbody, consumir o pedido válido de salto e manter o bloqueio de profundidade. A física não deve ser duplicada em Update.
+**PlayerController.FixedUpdate()** — Finalidade: atualizar a movimentação física. Entradas: nenhuma. Retorno: void. Corpo: consulta o chão, processa o pedido de deslize, define a velocidade horizontal do Rigidbody e consome o pedido de salto dentro da tolerância. Não há física no Update.
 
-**PlayerController.IsGrounded()** — Finalidade: verificar apoio sob os pés. Entradas: nenhuma; usa posição, dimensões e máscara configuradas. Retorno: bool. Corpo: consultar a região inferior da cápsula e aceitar apenas superfícies válidas. Contatos laterais e objetos decorativos não devem habilitar o salto.
+**PlayerController.CheckGround()** — Finalidade: verificar apoio válido sob os pés. Entradas: nenhuma; usa posição, raio da cápsula e `groundMask`. Retorno: bool. Corpo: lança uma esfera curta para baixo e aceita só superfícies quase horizontais; enquanto o Nilo sobe, devolve falso.
 
-**PlayerController.TryJump()** — Finalidade: iniciar um salto quando permitido. Entradas: nenhuma. Retorno: bool indicando se o pedido foi aceito. Corpo: recusar nos estados de falha, pausa ou sem chão; aplicar impulso vertical uma vez; atualizar estado e solicitar resposta visual e sonora.
+**PlayerController.TryJump()** — Finalidade: iniciar um salto quando permitido. Entradas: nenhuma. Retorno: bool indicando se o salto aconteceu. Corpo: recusa sem controle, abaixado ou fora da tolerância de apoio; zera a velocidade vertical e aplica `AddForce` com `VelocityChange`.
 
-**PlayerController.TrySlide()** — Finalidade: iniciar o deslize. Entradas: nenhuma. Retorno: bool. Corpo: validar chão e estado, guardar direção, reduzir altura e centro do colisor e iniciar temporizador. Recusar novo pedido se a ação já estiver em andamento.
+**PlayerController.TrySlide()** — Finalidade: iniciar o deslize. Entradas: nenhuma. Retorno: bool. Corpo: exige chão e que o Nilo não esteja abaixado; reduz a cápsula e inicia o temporizador. Repetir o comando não prolonga a ação.
 
-**PlayerController.UpdateSlide(float deltaTime)** — Finalidade: controlar duração e saída do deslize. Entrada: tempo decorrido do passo adotado. Retorno: void. Corpo: reduzir o tempo restante, verificar espaço superior ao terminar e restaurar o colisor apenas quando seguro. Durante a pausa, o temporizador não avança.
+**PlayerController.UpdateSlide(float deltaTime)** — Finalidade: controlar a duração e a saída do deslize. Entrada: tempo do passo de física. Retorno: void. Corpo: reduz o tempo restante e só restaura a cápsula em pé se houver espaço acima.
 
-**PlayerFeedback.SetState(int stateId, float horizontalSpeed)** — Finalidade: atualizar animação e efeitos. Entradas: identificador validado do estado e velocidade horizontal. Retorno: void. Corpo: atualizar parâmetros do Animator e disparar efeitos de mudança de estado uma vez, evitando tocar o som de pouso a cada quadro.
+**PlayerController.HasHeadroom()** (privado) — Finalidade: saber se a cápsula em pé caberia na posição atual. Entradas: nenhuma. Retorno: bool. Corpo: testa a cápsula original contra `headroomMask`, ignorando a camada do Nilo e triggers.
 
-**FollowCamera.LateUpdate()** — Finalidade: acompanhar Nilo após sua atualização de posição. Entradas: nenhuma. Retorno: void. Corpo: calcular alvo com deslocamento, aplicar suavização e limitar a posição à área da fase. Não alterar a rotação física do personagem.
+**PlayerController.SetCrouched(bool crouched)** (privado) — Finalidade: alternar entre cápsula em pé e abaixada. Entrada: postura desejada. Retorno: void. Corpo: ajusta altura e centro mantendo a base nos pés e achata o visual na mesma proporção.
 
-### Regras de fase interface e objetos
+**PlayerFeedback.Awake()** — Finalidade: obter o controlador e o Rigidbody do Nilo. Entradas: nenhuma. Retorno: void.
 
-**GameManager.StartLevel(int sceneIndex)** — Finalidade: iniciar uma cena válida. Entrada: índice incluído na configuração de cenas da build. Retorno: void. Corpo: validar o destino, restaurar escala de tempo e solicitar carregamento. A build parcial deve impedir índices de fases ainda ausentes.
+**PlayerFeedback.Update()** — Finalidade: atualizar animação e efeitos a partir do estado do Nilo. Entradas: nenhuma. Retorno: void. Corpo: envia velocidade, chão, postura, velocidade vertical e interação ao Animator; toca som e partícula só na mudança de estado (salto, pouso, início do deslize); toca passos em intervalos que dependem da velocidade.
 
-**GameManager.FailLevel()** — Finalidade: encerrar a tentativa. Entradas: nenhuma. Retorno: void. Corpo: ignorar chamadas duplicadas, bloquear o controle, exibir painel de falha e manter Reiniciar disponível. O efeito de falha do personagem é acionado somente na primeira chamada.
+**PlayerFeedback.PlayInteract()** — Finalidade: tocar a animação de interação. Entradas: nenhuma. Retorno: void. Corpo: liga o parâmetro de interação pelo tempo do clipe; ignorado depois da falha.
 
-**GameManager.RestartLevel()** — Finalidade: repetir a fase atual. Entradas: nenhuma. Retorno: void. Corpo: restaurar tempo e carregar novamente a cena ativa; o carregamento reinicia estações, perigos e efeitos. Botão de UI e tecla R chamam o mesmo método.
+**PlayerFeedback.PlayFail()** — Finalidade: resposta de falha do Nilo. Entradas: nenhuma. Retorno: void. Corpo: executa uma única vez: som, partícula de impacto e animação de falha.
 
-**GameManager.SetPaused(bool paused)** — Finalidade: alterar a pausa. Entrada: estado desejado. Retorno: void. Corpo: atualizar estado, painel e escala de tempo, respeitando falha ou conclusão. Restaurar o tempo antes de voltar ao menu ou recarregar.
+**PlayerFeedback.Play(AudioClip clip, float volume)** (privado) — Finalidade: tocar um efeito curto. Entradas: clipe e volume. Retorno: void. Corpo: ignora clipe ou fonte ausentes e usa `PlayOneShot`.
 
-**GameManager.CompleteLevel()** — Finalidade: concluir a fase. Entradas: nenhuma. Retorno: void. Corpo: bloquear chamadas repetidas e escolher entre conclusão parcial, próxima cena e encerramento final, conforme a configuração de entrega e o índice atual.
+**FollowCamera.LateUpdate()** — Finalidade: acompanhar o Nilo depois que ele se moveu. Entradas: nenhuma. Retorno: void. Corpo: calcula o alvo com deslocamento à frente, limita X à área da fase e aplica `SmoothDamp`.
 
-**Hazard.OnTriggerEnter(Collider other)** — Finalidade: detectar contato fatal em uma zona configurada como trigger. Entrada: colisor que entrou. Retorno: void. Corpo: verificar o papel Player e solicitar FailLevel. Perigos com colisão sólida poderão ter callback equivalente documentado, mantendo uma única regra de falha.
+### Regras de fase, interface e objetos
 
-**MovingHazard.FixedUpdate()** — Finalidade: movimentar o tronco entre limites. Entradas: nenhuma. Retorno: void. Corpo: calcular posição do ciclo usando velocidade e limites configurados e mover o Rigidbody cinemático de forma compatível com a física. Pausa e reinício devem manter comportamento previsível.
+**GameManager.Awake()** — Finalidade: preparar a fase ao carregar a cena. Entradas: nenhuma. Retorno: void. Corpo: registra a instância, restaura o tempo, esconde painéis e preenche o HUD.
 
-**InteractableStation.TryInteract()** — Finalidade: concluir uma estação próxima. Entradas: nenhuma; usa a referência do jogador e a distância configurada. Retorno: bool. Corpo: recusar se fora de alcance, já concluída ou partida bloqueada; alterar objetos ambientais e tecnológicos, emitir som e atualizar o objetivo uma vez.
+**GameManager.Update()** — Finalidade: ler R e Esc e expirar a mensagem atual. Entradas: nenhuma. Retorno: void. Corpo: R reinicia em qualquer estado; Esc alterna a pausa só entre jogando e pausado.
 
-**LevelExit.TryFinish()** — Finalidade: validar a saída. Entradas: nenhuma. Retorno: bool. Corpo: verificar proximidade e estação concluída; se faltar objetivo, mostrar ajuda; se estiver válido, chamar CompleteLevel. Não avançar por mero contato antes da interação prevista.
+**GameManager.StartLevel(int sceneIndex)** (estático) — Finalidade: iniciar uma cena válida. Entrada: índice na lista de cenas da build. Retorno: void. Corpo: recusa índices fora da build, restaura o tempo e carrega a cena.
 
-**DebrisSpawner.SpawnDebris(Vector3 origin, int count)** — Finalidade: criar detritos visuais da caixa. Entradas: posição e quantidade máxima desejada. Retorno: void. Corpo: validar vetor não vazio, sortear índice no intervalo válido, instanciar prefab, aplicar AddForce e AddTorque com limites pequenos e programar descarte. Usar camada sem colisão com Nilo.
+**GameManager.FailLevel()** — Finalidade: encerrar a tentativa. Entradas: nenhuma. Retorno: void. Corpo: ignora repetições, bloqueia o controle, congela o Nilo, aciona a resposta de falha uma vez, esconde a legenda e abre o painel com Reiniciar.
 
-**TutorialTrigger.OnTriggerEnter(Collider other)** — Finalidade: apresentar ajuda no local correto. Entrada: colisor que entrou na zona. Retorno: void. Corpo: confirmar Player, verificar se a ajuda já foi exibida nesta tentativa e mostrar a mensagem configurada, sem pausar um salto em curso.
+**GameManager.RestartLevel()** — Finalidade: repetir a fase. Entradas: nenhuma. Retorno: void. Corpo: recarrega a cena ativa. Botões Reiniciar e a tecla R usam este método.
 
-**SceneryMotion.Update()** — Finalidade: demonstrar deslocamento por Translate e rotação em objeto secundário. Entradas: nenhuma. Retorno: void. Corpo: mover o sinalizador entre limites no espaço definido, inverter direção na extremidade e girar sua peça visual. Não aplicar esse comportamento a um Rigidbody dinâmico.
+**GameManager.SetPaused(bool paused)** — Finalidade: alterar a pausa. Entrada: estado desejado. Retorno: void. Corpo: só pausa jogando e só retoma pausado; ajusta escala de tempo, controle e painel.
 
-### Navegação e manutenção do catálogo
+**GameManager.Resume(), GoToMenu(), PlayFromStart()** — Finalidade: ações dos botões Continuar, Menu e Jogar novamente. Entradas: nenhuma. Retorno: void. Corpo: chamam `SetPaused(false)`, `StartLevel(0)` e `StartLevel(1)`.
 
-**NpcRoute.SetDestination(int pointIndex)** — Finalidade: escolher um ponto seguro de Ivo. Entrada: índice no vetor de destinos. Retorno: bool. Corpo: validar índice, posição sobre o NavMesh e agente ativo; solicitar caminho e registrar o novo estado. Recusar pedidos inválidos sem bloquear o jogador.
+**GameManager.CompleteLevel()** — Finalidade: concluir a fase. Entradas: nenhuma. Retorno: void. Corpo: bloqueia repetições; na entrega parcial (`partialDelivery`) ou sem próxima cena na build, mostra a tela de conclusão; senão carrega o nível seguinte.
 
-**NpcRoute.Update()** — Finalidade: acompanhar o trajeto e a chegada. Entradas: nenhuma. Retorno: void. Corpo: aguardar cálculo do caminho, atualizar animação pela velocidade, comparar distância de chegada e passar ao estado de trabalho. Tratar caminho inválido com estado seguro e diagnóstico.
+**GameManager.StationCompleted(string nextObjective)** — Finalidade: registrar uma estação concluída. Entrada: texto do objetivo seguinte. Retorno: void. Corpo: soma uma estação e atualiza contador e objetivo.
 
-Métodos adicionais de inicialização, descarte, eventos de UI, áudio ou carregamento devem receber o mesmo registro quando forem criados. A lista não é uma autorização para deixar funções auxiliares sem documentação. Antes de cada entrega, comparar os métodos nos scripts com os registros e eliminar descrições que já não correspondam ao código.
+**GameManager.SetObjective(string text), ShowMessage(string text, float duration), SetPrompt(string text), ClearPrompt(string text)** — Finalidade: escrever no HUD. Entradas: texto e, na mensagem, segundos visíveis. Retorno: void. Corpo: `ClearPrompt` só apaga o aviso se ele ainda for do objeto que pediu.
+
+**GameManager.UpdateStationText()** (privado) — Finalidade: atualizar "Estação x/y". Entradas: nenhuma. Retorno: void.
+
+**Hazard.OnTriggerEnter(Collider other)** — Finalidade: detectar contato fatal. Entrada: colisor que entrou. Retorno: void. Corpo: se for o Nilo, pede `FailLevel`.
+
+**MovingHazard.Awake()** — Finalidade: preparar o Rigidbody cinemático e o ponto inicial. Entradas: nenhuma. Retorno: void.
+
+**MovingHazard.FixedUpdate()** — Finalidade: mover o tronco pelo ciclo fixo. Entradas: nenhuma. Retorno: void. Corpo: avança o tempo próprio (para na pausa, zera ao recarregar), calcula a fração do percurso, toca o aviso sonoro ao sair do ponto inicial e move com `MovePosition`.
+
+**Interactable.Update()** — Finalidade: detectar proximidade e a tecla E. Entradas: nenhuma. Retorno: void. Corpo: com a partida em andamento, mostra ou apaga o aviso quando a proximidade muda e chama `Interact`; se houve efeito, toca a animação de interação do Nilo.
+
+**Interactable.Interact()** (abstrato) e **Available** (propriedade) — Finalidade: ação do objeto e se ele ainda aceita interação. Retorno: bool.
+
+**InteractableStation.Interact()** — Finalidade: concluir a estação. Entradas: nenhuma. Retorno: bool. Corpo: recusa se já concluída; troca os objetos visuais, dispara o evento `onCompleted`, atualiza o objetivo e mostra a mensagem.
+
+**LevelExit.Interact()** — Finalidade: validar a saída. Entradas: nenhuma. Retorno: bool. Corpo: com estação pendente, mostra o aviso e não avança; senão chama `CompleteLevel`.
+
+**TutorialTrigger.OnTriggerEnter(Collider other)** — Finalidade: mostrar ajuda ou fala no local certo. Entrada: colisor que entrou. Retorno: void. Corpo: só para o Nilo e uma vez por tentativa.
+
+**DebrisSpawner.Burst()** — Finalidade: disparar os detritos a partir do próprio objeto. Entradas: nenhuma. Retorno: void. Corpo: chama `SpawnDebris` com a posição e a quantidade configuradas.
+
+**DebrisSpawner.SpawnDebris(Vector3 origin, int count)** — Finalidade: criar detritos visuais da caixa. Entradas: posição e quantidade. Retorno: void. Corpo: valida o vetor, toca poeira e som; para cada detrito sorteia um índice válido, instancia o prefab, aplica `AddForce` e `AddTorque` e agenda o descarte em 4 segundos.
+
+**SceneryMotion.Update()** — Finalidade: demonstrar `transform.Translate` e rotação. Entradas: nenhuma. Retorno: void. Corpo: move o sinalizador até a distância configurada, inverte o sentido nas pontas e gira a hélice.
+
+**MainMenu.Awake(), Play(), ShowControls(), ShowCredits(), Back(), Quit()** — Finalidade: painéis e botões do menu inicial. Entradas: nenhuma. Retorno: void. Corpo: `Play` chama `GameManager.StartLevel(1)`; `Quit` fecha o aplicativo (sem efeito no Editor).
+
+**MainMenu.ShowPanel(GameObject panel)** (privado) — Finalidade: deixar visível só um painel. Entrada: painel. Retorno: void.
+
+### Navegação (etapa final)
+
+**NpcRoute.SetDestination(int pointIndex)** e **NpcRoute.Update()** continuam planejados para o Ivo no nível 4, com o contrato descrito na versão 0.5: validar o índice e o NavMesh, acompanhar a chegada e nunca bloquear o jogador quando o caminho falhar.
 
 ## Plano de execução e entregas
 
@@ -656,11 +731,19 @@ Métodos adicionais de inicialização, descarte, eventos de UI, áudio ou carre
 
 **Marco A — Projeto e personagem:** criar o projeto URP na versão exigida, preparar uma cena de teste e validar caminhada, corrida, salto, deslize e câmera. Fazer um teste inicial no laboratório. Critério de avanço: atravessar obstáculos simples sem comportamento inconsistente do colisor.
 
+*Situação:* concluído no Editor em 9/10/2026, com a cena `TestePersonagem`. O teste no laboratório ainda não foi feito.
+
 **Marco B — Nível 1 completo em formas simples:** montar entrada, tutorial, perigos, estação e saída. Criar os estados de menu, pausa, falha e conclusão parcial. Critério: conseguir iniciar, falhar, reiniciar e concluir sem usar o Inspector para corrigir o estado.
+
+*Situação:* concluído em 9/10/2026. O fluxo menu → fase → falha → reiniciar → estação → saída → conclusão funcionou pelos próprios botões.
 
 **Marco C — Conceitos e apresentação:** adicionar o vetor de prefabs, sorteio, spawn por função, força, torque, rotação, Translate secundário, tags, animações, sons e partículas. Montar o catálogo de assets do nível e conferir as evidências de Skills. Documentar todas as funções implementadas.
 
+*Situação:* código concluído em 9/10/2026, incluindo a animação de interação e o novo visual do Nilo. Catálogo pronto em `Docs/catalogo-assets.html`. Falta importar os assets.
+
 **Marco D — Entrega parcial:** revisar materiais, legibilidade e desempenho no laboratório. Atualizar o GDD com o que realmente funciona. Preparar o projeto compactado e apresentar somente o nível 1. Datas exatas dependem do calendário fornecido pelo professor; este documento não inventa prazos.
+
+*Situação:* em andamento. GDD atualizado nesta versão e pacote compactado gerado em 13/10/2026. Faltam os assets, o teste no laboratório e a revisão de desempenho.
 
 ### Segundo bimestre
 
@@ -672,7 +755,7 @@ Métodos adicionais de inicialização, descarte, eventos de UI, áudio ou carre
 
 ### Organização da equipe e controle de escopo
 
-Distribuir responsabilidades por personagem e física; fases e terreno; interface e integração; arte, áudio e documentação. Uma pessoa pode assumir mais de uma frente conforme o tamanho real da equipe. A capa e a divisão nominal serão preenchidas pelos integrantes; não há nomes ou participações presumidos nesta versão.
+Distribuir responsabilidades por personagem e física; fases e terreno; interface e integração; arte, áudio e documentação. Uma pessoa pode assumir mais de uma frente conforme o tamanho real da equipe. A equipe é formada por Matheus Braga, Moruan Mattar, Nícolas Muciaccia e Nícolas Ramos. A divisão de frentes por integrante ainda será registrada pela equipe; esta versão não presume quem fez cada parte.
 
 Registrar tarefas, autoria, revisões e testes por integrante, pois o enunciado informa avaliação proporcional à participação. O registro pode ser uma planilha simples com data, tarefa, responsável e evidência, acompanhado do histórico do repositório. Não atribuir uma tarefa a alguém sem combinar a divisão.
 
@@ -682,19 +765,22 @@ Se o prazo apertar, reduzir duração das fases, quantidade de falas e variedade
 
 ### Requisitos gerais e primeira etapa
 
-**Unity 6, 6000.0.8f1 e Universal 3D URP:** previstos na configuração técnica; evidência futura em ProjectVersion.txt, configuração de renderização e execução no laboratório. A versão dos projetos antigos não substitui a especificada no PDF.
-
-**Cinco níveis e somente nível 1 na primeira entrega:** cinco cenas descritas no GDD; build parcial configurada para concluir após o nível 1; build final com transições até a antena. Evidência: execução e lista de cenas incluídas.
-
-**Mínimo de 70 assets por nível:** catálogo comum de 70 mais cinco locais, meta de 75 por cena. Evidência: inventário e Hierarchy auditados. Necessário confirmar critério de contagem e uso de terceiros com o professor.
-
-**Colisão, movimento, Translate e AddForce:** chão e perigos, controlador físico, sinalizador secundário e salto. **Rotação e torque:** orientação e sinalizador, além dos detritos da caixa. Evidência: ação visível na fase e função correspondente documentada.
-
-**Vetor de prefabs, sorteio e spawn por função:** DebrisSpawner usa vetor, índice válido aleatório e chamada de SpawnDebris. A aleatoriedade não altera a posição das armadilhas principais. **Tags:** identificação de jogador, chão, perigos, interação e saída.
-
-**Scripts, animações, partículas e som:** componentes planejados e respostas de movimento, pouso, interação e falha. **UI de texto e botão Reiniciar:** HUD, ajuda, pausa e painel de falha. A tecla de reinício é adicional ao botão exigido.
-
-**Tema do primeiro bimestre:** Skills, demonstrado pelas cinco situações do tutorial. Os demais temas já aparecem em objetos e no contexto do nível. **GDD detalhado e funções documentadas:** este plano serve de base, e a entrega deve conter sua atualização conforme o código real.
+| Requisito | Situação | Evidência no projeto |
+|---|---|---|
+| Unity 6 e Universal 3D (URP) | Atendido, versão a confirmar | `ProjectSettings/ProjectVersion.txt` (6000.0.80f1); confirmar no laboratório se corresponde à 6000.0.8f1 do PDF |
+| Cinco níveis no planejamento, só o nível 1 na primeira entrega | Atendido | Build com `Menu` (0) e `Nivel1_TrilhaEncoberta` (1); `partialDelivery` ligado no GameManager |
+| Mínimo de 70 assets por nível | Pendente | Catálogo em `Docs/catalogo-assets.html`; nenhum modelo importado |
+| Colisão e movimento | Atendido | Chão, fossos, galhos e paredes; `PlayerController` |
+| `transform.Translate` | Atendido | Sinalizador do posto (`SceneryMotion`) |
+| `AddForce` | Atendido | Salto do Nilo e detritos da caixa |
+| Rotação e `AddTorque` | Atendido | Giro do visual do Nilo, hélice do sinalizador e torque nos detritos |
+| Vetor de prefabs, sorteio e spawn por função | Atendido | `DebrisSpawner.SpawnDebris` sorteia entre três prefabs ao concluir a estação |
+| Tags | Atendido | Player, Ground, Hazard, Interactable e LevelExit |
+| Scripts, animações, partículas e som | Atendido | 13 scripts; 8 animações; 4 sistemas de partículas; 8 efeitos sonoros |
+| UI de texto e botão Reiniciar | Atendido | HUD, legendas, pausa e painel de falha com Reiniciar (e tecla R) |
+| Tema do primeiro bimestre (Skills) | Atendido | Cinco situações S1–S5 com avisos no nível 1 |
+| GDD detalhado e funções documentadas | Atendido nesta versão | Este documento e os comentários em cada script |
+| Execução no computador da aula | Pendente | Teste presencial ainda não feito |
 
 ### Requisitos específicos da etapa final
 
@@ -706,21 +792,32 @@ Se o prazo apertar, reduzir duração das fases, quantidade de falas e variedade
 
 **Qualidade de gameplay e mecânica:** repetibilidade dos comandos, leitura do perigo, falhas compreensíveis e progressão curta. **Qualidade gráfica:** coerência de materiais, cenário sem oclusões indevidas e terrenos trabalhados. Esses itens exigem avaliação da build; o texto do GDD não comprova qualidade por si só.
 
-### Testes de aceitação planejados
+### Testes de aceitação
 
-**Controle:** repetir saltos no mesmo vão, testar inversão de direção e colisão lateral. Confirmar que uma parede não habilita salto no ar. Deslizar sob o galho e tentar levantar ainda sob ele; o personagem não pode atravessar ou ficar preso no objeto.
+Os testes abaixo foram executados no Editor em 9/10/2026, na máquina de Matheus Braga, com entrada de teclado simulada e chamadas diretas aos métodos. Eles verificam a lógica; não substituem uma pessoa jogando a fase inteira com teclado real, que continua pendente.
 
-**Estados:** falhar, reiniciar e repetir a sequência; pausar durante um tronco em movimento; reiniciar pela pausa; voltar ao menu e iniciar novamente. Verificar tempo normal, posição inicial, estação pendente e ausência de efeitos duplicados.
+| Teste | Resultado |
+|---|---|
+| Caminhar | 3,00 unidades por segundo, pés no chão |
+| Encostar num obstáculo baixo | Parou na borda, sem subir sozinho |
+| Saltar correndo sobre a raiz e o vão de 1,8 | Passou |
+| Manter Espaço pressionado | Um salto só |
+| Sair do fosso de 1 unidade | Passou |
+| Encostar de lado num bloco em pleno ar | Não contou como chão |
+| Deslize | 2,97 unidades de distância |
+| Deslize terminando sob o galho | Ficou abaixado, recusou o salto e saiu andando |
+| Cair no fosso | Painel de falha; segunda chamada sem efeito duplicado |
+| Reiniciar pelo botão | Posição, estação 0/1 e tempo normal restaurados |
+| Pausar e continuar | Tempo parado e retomado, controle bloqueado e devolvido |
+| Saída antes da estação | Mostrou a pendência e não avançou |
+| Estação acionada duas vezes, com E | Progresso 1/1, sem duplicar; detritos, poeira, som e animação de interação |
+| Saída depois da estação | Tela de conclusão; Jogar novamente recarregou o nível |
+| Tronco descendo sobre o Nilo | Falha |
+| Animações | Locomoção com braços e pernas, queda, deslize, interação e falha observados |
 
-**Interações:** pressionar E fora do alcance, concluir a estação e pressionar novamente. O primeiro caso não produz efeito; o último não duplica progresso. A saída antes do objetivo informa a pendência. A saída correta carrega o destino esperado.
+Um defeito foi encontrado e corrigido durante os testes: um objeto saindo do alcance apagava o aviso de outro que acabava de entrar. Em um teste com teletransporte, o Nilo subiu cerca de 1,3 unidade sem comando; o efeito não se repetiu com teclado e provavelmente vem de mover o Rigidbody por código. Fica registrado para observação no teste com teclado real.
 
-**Progressão:** concluir nível 1 na build parcial e confirmar a tela de demonstração. Na final, concluir os cinco níveis, verificar a presença das estações e alcançar o encerramento. Nenhuma cena ausente pode ser referenciada pelo fluxo de entrega.
-
-**Recursos e NPC:** conferir os assets por cena e as dez camadas efetivamente pintadas; observar Ivo chegando aos pontos sem atravessar bancada ou terreno; confirmar que suas falhas de rota não travam a campanha.
-
-**Teste com colegas:** pedir que joguem sem explicação oral e observar onde não entendem o comando, a saída ou a razão de uma falha. Registrar problema, alteração e resultado. Ajustar primeiro controles e distâncias; efeitos visuais entram depois.
-
-Os testes acima estão planejados. Marcar resultado, data, build e responsável somente após executá-los. Não transformar metas de duração, quadros por segundo ou quantidade de assets em resultados sem medição.
+**Ainda pendentes:** jogar a fase inteira com teclado real; pausar durante o tronco em movimento; voltar ao menu e iniciar de novo; teste com colegas sem explicação oral; cronometrar a travessia; teste no computador do laboratório.
 
 ### Pacote de entrega e apresentação
 
@@ -730,7 +827,9 @@ Guardar o GDD atualizado e o registro de recursos usados. Extrair uma cópia do 
 
 No segundo bimestre, o vídeo de um a três minutos deve mostrar o objetivo, o controle do personagem, exemplos de fases, temas e os recursos finais exigidos. Uma sequência sugerida é: abertura breve; nível 1 e movimentos; estações dos níveis seguintes; Ivo e terreno; antena e créditos. O vídeo complementa a execução presencial.
 
-A entrega acadêmica depende da implementação, da validação dos recursos de terceiros e da participação efetiva do grupo. Esta revisão conclui o planejamento documental solicitado; não substitui essas etapas de produção e avaliação.
+**Pacote da primeira entrega:** `RastroDoDossel-Entrega1.zip`, gerado em 13/10/2026, com Assets, Packages, ProjectSettings, UserSettings e a pasta Docs. Library, Logs e arquivos de IDE ficam de fora, porque o Unity os recria ao abrir. O pacote MCP for Unity, ferramenta de desenvolvimento baixada por git, foi retirado do `manifest.json` da cópia compactada para que o projeto abra no laboratório sem git e sem esse download.
+
+A entrega acadêmica depende da implementação, da validação dos recursos de terceiros e da participação efetiva do grupo.
 
 ## Fontes e histórico desta revisão
 
@@ -741,3 +840,5 @@ A entrega acadêmica depende da implementação, da validação dos recursos de 
 **Projetos da pasta dev-games-unityhub:** Jogo-1-Dev-Games, jogo-2-dev-games, jogo-3-dev-games e jogo-5-dev-games, consultados por scripts e arquivos de projeto. Servem de referência de técnicas estudadas, sem afirmar validação de execução.
 
 **Alterações da versão 0.5:** expansão de três para cinco níveis; foco do primeiro bimestre no nível 1; inclusão de Ecorenovação, Tecnologia e Skills com cinco itens cada; catálogo de assets; plano de Terrain, NPC e NavMesh; contratos de funções; fluxo de telas; critérios de aceitação e divisão das entregas. História de Nilo, ambientação na selva e foco em mover, pular e deslizar foram preservados.
+
+**Alterações da versão 0.6:** registro do que foi implementado e testado na primeira entrega; nomes dos integrantes; quadro de situação no início; valores físicos reais e as tolerâncias de salto; tronco móvel como pilão vertical; zona de queda geral; visual de guerrilheiro da selva e animações do Nilo; mapa do nível 1 com posições da cena; interface, sons sintetizados e partículas; componentes e documentação das funções conforme o código; situação dos marcos, quadro de requisitos e resultados dos testes; situação do catálogo de assets e do pacote de entrega.
