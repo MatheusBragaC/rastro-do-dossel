@@ -23,7 +23,7 @@ Game Design Document
 | Menu, pausa, falha com Reiniciar e conclusão parcial | Implementado e testado no Editor |
 | Conceitos dos tutoriais (Translate, AddForce, rotação, torque, vetor de prefabs, tags) | Implementado |
 | Animações, partículas e sons | Implementado (personagem e efeitos provisórios) |
-| 70 assets por nível | Pendente: catálogo pronto, nenhum modelo de terceiros importado |
+| 70 assets por nível | Nível 1 montado: 70 IDs do catálogo na cena, 73 modelos distintos de terceiros (CC0); critério a confirmar com o professor |
 | Teste completo com teclado no computador do laboratório | Pendente |
 | Níveis 2 a 5, Terrain, NPC, NavMesh, pós-processamento | Segundo bimestre |
 
@@ -573,7 +573,9 @@ A planilha de auditoria terá uma linha por ID e as colunas categoria, recurso, 
 
 O PDF não define precisamente se “assets” significa recursos distintos, instâncias ou outro critério. A contagem acima adota uma leitura conservadora. A equipe deve validar o critério com o professor no início e ajustar o catálogo se necessário. Os totais deste GDD são metas; não são uma auditoria de cenas já construídas.
 
-**Situação em 13/10/2026:** o catálogo com um recurso gratuito para cada ID de V01 a A05, com link, licença e polígonos, está em `Docs/catalogo-assets.html`. A página gera a planilha de auditoria com as colunas desta seção. Nenhum modelo de terceiros foi importado ainda: a cena do nível 1 usa formas primitivas montadas pela equipe, que não entram na contagem. O catálogo evita modelos acima de 500 mil polígonos e explosivos; bananeira, cipó e bromélia ainda não têm fonte CC0 confirmada. Antes de importar, a equipe precisa confirmar com o professor o critério de contagem e as fontes aceitas, e instalar o Git LFS no repositório.
+**Situação em 13/10/2026:** os assets foram baixados e colocados na cena do nível 1. Ficam em `Assets/Terceiros/` (Poly Haven e OpenGameArt, todos CC0), com materiais URP próprios em `Assets/Terceiros/_Materiais`. Na cena, cada objeto leva o ID do catálogo no nome (por exemplo, `Cenario_Assets/Vegetacao/V04_Embauba`). A planilha `Docs/auditoria-assets-nivel1.csv` foi gerada a partir da cena e traz, para cada ID, o arquivo, a origem, o link, a licença, o número de usos e o caminho na Hierarchy. Pelo critério mais conservador (recursos distintos), são 73 modelos de terceiros; pelo critério de IDs, os 70 estão preenchidos, sendo a placa de perigo (A05) da equipe.
+
+Trocas em relação ao catálogo publicado: o jacarandá (132 MB, acima do limite do GitHub) deu lugar à sumaúma; bananeira, embaúba e bambu vieram do 3TD Tropical Pack; painel solar, antena, posto da ithappy e estacas do Sketchfab exigem conta e foram trocados por câmera-sensor, lanterna de sinalização, barreira de concreto e estacas do Wood Kit 1. A árvore com a marca do Nilo (N1-03), as estacas dos fossos, os galhos baixos, o tronco móvel e a viga da estrutura agora usam modelos reais sobre os mesmos colisores; nenhum modelo de terceiros tem colisor. Modelos decorativos ficam atrás do corredor do jogador, para não esconder o Nilo. Cipó e bromélia continuam sem modelo. Ainda falta confirmar com o professor o critério de contagem e as fontes aceitas.
 
 ### Terrain e dez camadas de textura
 
@@ -769,7 +771,7 @@ Se o prazo apertar, reduzir duração das fases, quantidade de falas e variedade
 |---|---|---|
 | Unity 6 e Universal 3D (URP) | Atendido, versão a confirmar | `ProjectSettings/ProjectVersion.txt` (6000.0.80f1); confirmar no laboratório se corresponde à 6000.0.8f1 do PDF |
 | Cinco níveis no planejamento, só o nível 1 na primeira entrega | Atendido | Build com `Menu` (0) e `Nivel1_TrilhaEncoberta` (1); `partialDelivery` ligado no GameManager |
-| Mínimo de 70 assets por nível | Pendente | Catálogo em `Docs/catalogo-assets.html`; nenhum modelo importado |
+| Mínimo de 70 assets por nível | Atendido no nível 1, critério a confirmar | `Docs/auditoria-assets-nivel1.csv`: 70 IDs preenchidos (69 de terceiros e 1 da equipe), 73 modelos distintos e 118 usos na cena, todos visíveis |
 | Colisão e movimento | Atendido | Chão, fossos, galhos e paredes; `PlayerController` |
 | `transform.Translate` | Atendido | Sinalizador do posto (`SceneryMotion`) |
 | `AddForce` | Atendido | Salto do Nilo e detritos da caixa |
@@ -841,4 +843,4 @@ A entrega acadêmica depende da implementação, da validação dos recursos de 
 
 **Alterações da versão 0.5:** expansão de três para cinco níveis; foco do primeiro bimestre no nível 1; inclusão de Ecorenovação, Tecnologia e Skills com cinco itens cada; catálogo de assets; plano de Terrain, NPC e NavMesh; contratos de funções; fluxo de telas; critérios de aceitação e divisão das entregas. História de Nilo, ambientação na selva e foco em mover, pular e deslizar foram preservados.
 
-**Alterações da versão 0.6:** registro do que foi implementado e testado na primeira entrega; nomes dos integrantes; quadro de situação no início; valores físicos reais e as tolerâncias de salto; tronco móvel como pilão vertical; zona de queda geral; visual de guerrilheiro da selva e animações do Nilo; mapa do nível 1 com posições da cena; interface, sons sintetizados e partículas; componentes e documentação das funções conforme o código; situação dos marcos, quadro de requisitos e resultados dos testes; situação do catálogo de assets e do pacote de entrega.
+**Alterações da versão 0.6:** assets do nível 1 baixados, colocados na cena e auditados; registro do que foi implementado e testado na primeira entrega; nomes dos integrantes; quadro de situação no início; valores físicos reais e as tolerâncias de salto; tronco móvel como pilão vertical; zona de queda geral; visual de guerrilheiro da selva e animações do Nilo; mapa do nível 1 com posições da cena; interface, sons sintetizados e partículas; componentes e documentação das funções conforme o código; situação dos marcos, quadro de requisitos e resultados dos testes; situação do catálogo de assets e do pacote de entrega.
