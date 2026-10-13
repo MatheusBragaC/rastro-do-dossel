@@ -19,6 +19,10 @@ public class GameManager : MonoBehaviour
     public int menuSceneIndex = 0;
     public int firstLevelIndex = 1;
 
+    [Header("Vida")]
+    public int maxHearts = 3;
+    public float invulnerableTime = 1.2f;   // após um golpe, outros contatos são ignorados
+
     [Header("Referências")]
     public PlayerController player;
     public Text levelText;
@@ -30,16 +34,20 @@ public class GameManager : MonoBehaviour
     public GameObject pausePanel;
     public GameObject failPanel;
     public GameObject completePanel;
+    public Image[] heartIcons;   // um ícone por coração, da esquerda para a direita
 
     public State CurrentState { get; private set; }
     public int StationsDone { get; private set; }
+    public int Hearts { get; private set; }
     public bool AllStationsDone { get { return StationsDone >= stationsTotal; } }
 
     private float messageTimer;
+    private float invulnerableUntil;
 
     /// Finalidade: preparar a fase no carregamento da cena.
     /// Entradas: nenhuma. Retorno: void.
-    /// Corpo: registra a instância, garante tempo normal, esconde painéis e preenche o HUD.
+    /// Corpo: registra a instância, garante tempo normal, esconde painéis, preenche o HUD,
+    /// enche os corações e trava o cursor para a câmera girar com o mouse.
     void Awake()
     {
         Instance = this;
@@ -54,6 +62,9 @@ public class GameManager : MonoBehaviour
         levelText.text = levelName;
         SetObjective(startObjective);
         UpdateStationText();
+        Hearts = maxHearts;
+        UpdateHearts();
+        SetCursorLocked(true);
     }
 
     /// Finalidade: ler R (reiniciar) e Esc (pausa) e expirar a mensagem atual.
@@ -109,6 +120,39 @@ public class GameManager : MonoBehaviour
         promptText.text = "";
         messageBox.SetActive(false);
         failPanel.SetActive(true);
+        SetCursorLocked(false);
+    }
+
+    /// Finalidade: aplicar um golpe não fatal ao Nilo.
+    /// Entradas: sourcePosition, de onde veio o golpe (define o empurrão); respawnPoint, ponto
+    /// seguro para onde voltar (fossos) ou null para só empurrar. Retorno: void.
+    /// Corpo: ignora fora da partida e durante a invulnerabilidade; tira um coração, atualiza o HUD
+    /// e toca a resposta de dano; sem corações chama FailLevel; senão teleporta ao ponto seguro
+    /// ou empurra o Nilo para longe da origem do golpe.
+    public void TakeHit(Vector3 sourcePosition, Transform respawnPoint)
+    {
+        if (CurrentState != State.Playing || Time.time < invulnerableUntil) return;
+        invulnerableUntil = Time.time + invulnerableTime;
+        Hearts--;
+        UpdateHearts();
+        var feedback = player.GetComponent<PlayerFeedback>();
+        if (Hearts <= 0)
+        {
+            FailLevel();
+            return;
+        }
+        if (feedback != null) feedback.PlayHurt(invulnerableTime);
+        if (respawnPoint != null)
+        {
+            var rb = player.GetComponent<Rigidbody>();
+            rb.linearVelocity = Vector3.zero;
+            rb.position = respawnPoint.position;
+            player.transform.position = respawnPoint.position;
+        }
+        else
+        {
+            player.Knockback(player.transform.position - sourcePosition);
+        }
     }
 
     /// Finalidade: repetir a fase atual.
@@ -131,6 +175,7 @@ public class GameManager : MonoBehaviour
         Time.timeScale = paused ? 0f : 1f;
         player.controlEnabled = !paused;
         pausePanel.SetActive(paused);
+        SetCursorLocked(!paused);
     }
 
     /// Finalidade: botão Continuar da pausa. Entradas: nenhuma. Retorno: void.
@@ -155,6 +200,7 @@ public class GameManager : MonoBehaviour
         CurrentState = State.Completed;
         player.controlEnabled = false;
         promptText.text = "";
+        SetCursorLocked(false);
         int next = SceneManager.GetActiveScene().buildIndex + 1;
         if (partialDelivery || next >= SceneManager.sceneCountInBuildSettings)
         {
@@ -207,10 +253,27 @@ public class GameManager : MonoBehaviour
         if (promptText.text == text) promptText.text = "";
     }
 
-    /// Finalidade: atualizar o contador "Estação x/y". Entradas: nenhuma. Retorno: void.
+    /// Finalidade: atualizar o contador "Etapas x/y" (estação e sentinela). Entradas: nenhuma. Retorno: void.
     /// Corpo: formata StationsDone e stationsTotal no HUD.
     private void UpdateStationText()
     {
-        stationText.text = "Estação " + StationsDone + "/" + stationsTotal;
+        stationText.text = "Etapas " + StationsDone + "/" + stationsTotal;
+    }
+
+    /// Finalidade: mostrar os corações restantes. Entradas: nenhuma. Retorno: void.
+    /// Corpo: deixa visíveis só os primeiros Hearts ícones.
+    private void UpdateHearts()
+    {
+        if (heartIcons == null) return;
+        for (int i = 0; i < heartIcons.Length; i++)
+            if (heartIcons[i] != null) heartIcons[i].enabled = i < Hearts;
+    }
+
+    /// Finalidade: travar ou soltar o cursor do mouse. Entrada: locked. Retorno: void.
+    /// Corpo: travado e invisível durante a partida (a câmera gira com o mouse); livre nos painéis.
+    private void SetCursorLocked(bool locked)
+    {
+        Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
+        Cursor.visible = !locked;
     }
 }

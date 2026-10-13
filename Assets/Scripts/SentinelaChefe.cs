@@ -1,0 +1,182 @@
+using UnityEngine;
+
+// Sentinela da Vigília: máquina de patrulha automática que guarda o posto de observação (chefe do nível 1).
+// Ciclo: mira no Nilo, avança em linha reta até bater no limite da arena, fica atordoada com as
+// baterias expostas; retirar as três baterias a desliga. O Nilo não ataca: desvia e interage.
+[RequireComponent(typeof(Rigidbody))]
+public class SentinelaChefe : MonoBehaviour
+{
+    public enum Estado { Dormindo, Mirando, Avancando, Atordoada, Desligada }
+
+    [Header("Arena (limites em que a sentinela se move)")]
+    public Vector3 arenaMin;
+    public Vector3 arenaMax;
+
+    [Header("Ciclo")]
+    public float aimTime = 1.4f;
+    public float[] chargeSpeeds = { 8f, 10f, 12f };   // uma velocidade por bateria retirada
+    public float stunTime = 4.5f;
+    public float turnSpeed = 90f;
+
+    [Header("Referências")]
+    public GameObject hazardZone;        // trigger com Hazard, ligado só durante o avanço
+    public GameObject bateriaInteragivel; // objeto com BateriaSentinela, ligado só atordoada
+    public GameObject[] celulas;          // uma célula visual apagada por bateria retirada
+    public Light lampada;
+    public Color corMira = new Color(1f, 0.15f, 0.1f);
+    public Color corAtordoada = new Color(1f, 0.8f, 0.2f);
+    public AudioSource somAviso;
+    public AudioSource somBatida;
+    public AudioSource somDesligar;
+    public GameObject[] ativarAoDesligar;
+    public GameObject[] desativarAoDesligar;
+
+    [Header("Textos")]
+    [TextArea] public string mensagemBateria = "Bateria retirada ({0}/{1}). Ela vai avançar mais rápido!";
+    [TextArea] public string mensagemFim = "MARA (rádio): Sentinela desligada. O posto de observação está livre. Siga para o terminal.";
+    public string objetivoDepois = "usar o terminal de saída";
+
+    public Estado EstadoAtual { get; private set; }
+    public int BateriasRestantes { get; private set; }
+
+    private Rigidbody bodyRb;
+    private float timer;
+    private Vector3 chargeDir;
+    private float lampBase;
+
+    /// Finalidade: preparar o corpo cinemático e o estado inicial. Entradas: nenhuma. Retorno: void.
+    /// Corpo: configura o Rigidbody, conta as baterias pelas células, apaga a zona de dano e a
+    /// bateria interagível e deixa a sentinela dormindo até o Nilo entrar na arena.
+    void Awake()
+    {
+        bodyRb = GetComponent<Rigidbody>();
+        bodyRb.isKinematic = true;
+        bodyRb.interpolation = RigidbodyInterpolation.Interpolate;
+        BateriasRestantes = celulas != null && celulas.Length > 0 ? celulas.Length : 3;
+        if (hazardZone != null) hazardZone.SetActive(false);
+        if (bateriaInteragivel != null) bateriaInteragivel.SetActive(false);
+        if (lampada != null) { lampBase = lampada.intensity; lampada.enabled = false; }
+        EstadoAtual = Estado.Dormindo;
+    }
+
+    /// Finalidade: ativar a sentinela (chamado pelo gatilho de entrada da arena).
+    /// Entradas: nenhuma. Retorno: void.
+    /// Corpo: só sai do estado Dormindo; acende a lâmpada e começa a mirar.
+    public void Acordar()
+    {
+        if (EstadoAtual != Estado.Dormindo) return;
+        Mirar();
+    }
+
+    /// Finalidade: executar o ciclo de mira, avanço e atordoamento.
+    /// Entradas: nenhuma. Retorno: void.
+    /// Corpo: Mirando gira para o Nilo e pisca; Avancando move em linha reta com MovePosition
+    /// até sair dos limites da arena, onde bate e fica atordoada; Atordoada espera stunTime e
+    /// volta a mirar. Para na pausa porque usa o tempo de física.
+    void FixedUpdate()
+    {
+        var gm = GameManager.Instance;
+        if (gm == null || gm.player == null || gm.CurrentState != GameManager.State.Playing) return;
+        float dt = Time.fixedDeltaTime;
+
+        switch (EstadoAtual)
+        {
+            case Estado.Mirando:
+                Vector3 toPlayer = gm.player.transform.position - bodyRb.position;
+                toPlayer.y = 0f;
+                if (toPlayer.sqrMagnitude > 0.01f)
+                {
+                    var goal = Quaternion.LookRotation(toPlayer.normalized, Vector3.up);
+                    bodyRb.MoveRotation(Quaternion.RotateTowards(bodyRb.rotation, goal, turnSpeed * dt));
+                }
+                if (lampada != null) lampada.intensity = lampBase * (0.4f + 0.6f * Mathf.Abs(Mathf.Sin(Time.time * 12f)));
+                timer -= dt;
+                if (timer <= 0f) Avancar();
+                break;
+
+            case Estado.Avancando:
+                int idx = Mathf.Clamp(celulas.Length - BateriasRestantes, 0, chargeSpeeds.Length - 1);
+                Vector3 next = bodyRb.position + chargeDir * chargeSpeeds[idx] * dt;
+                Vector3 clamped = new Vector3(Mathf.Clamp(next.x, arenaMin.x, arenaMax.x), next.y, Mathf.Clamp(next.z, arenaMin.z, arenaMax.z));
+                bodyRb.MovePosition(clamped);
+                if (clamped != next) Bater();
+                break;
+
+            case Estado.Atordoada:
+                timer -= dt;
+                if (timer <= 0f) Mirar();
+                break;
+        }
+    }
+
+    /// Finalidade: entrar no estado Mirando. Entradas: nenhuma. Retorno: void.
+    /// Corpo: apaga a bateria interagível, acende a lâmpada vermelha e inicia o tempo de mira.
+    private void Mirar()
+    {
+        EstadoAtual = Estado.Mirando;
+        timer = aimTime;
+        if (bateriaInteragivel != null) bateriaInteragivel.SetActive(false);
+        if (lampada != null) { lampada.enabled = true; lampada.color = corMira; }
+    }
+
+    /// Finalidade: iniciar o avanço. Entradas: nenhuma. Retorno: void.
+    /// Corpo: fixa a direção atual, liga a zona de dano e toca o aviso.
+    private void Avancar()
+    {
+        EstadoAtual = Estado.Avancando;
+        chargeDir = bodyRb.rotation * Vector3.forward;
+        chargeDir.y = 0f;
+        chargeDir.Normalize();
+        if (hazardZone != null) hazardZone.SetActive(true);
+        if (lampada != null) lampada.intensity = lampBase;
+        if (somAviso != null) somAviso.Play();
+    }
+
+    /// Finalidade: reagir à batida no limite da arena. Entradas: nenhuma. Retorno: void.
+    /// Corpo: desliga a zona de dano, expõe a bateria, muda a lâmpada para amarelo e inicia o atordoamento.
+    private void Bater()
+    {
+        EstadoAtual = Estado.Atordoada;
+        timer = stunTime;
+        if (hazardZone != null) hazardZone.SetActive(false);
+        if (bateriaInteragivel != null) bateriaInteragivel.SetActive(true);
+        if (lampada != null) lampada.color = corAtordoada;
+        if (somBatida != null) somBatida.Play();
+    }
+
+    /// Finalidade: retirar uma bateria (chamado pela interação com E).
+    /// Entradas: nenhuma. Retorno: bool indicando se a bateria foi retirada.
+    /// Corpo: só vale atordoada; apaga a célula correspondente, mostra a mensagem e, na última,
+    /// desliga a sentinela; senão ela acorda na hora e volta a mirar.
+    public bool RemoverBateria()
+    {
+        if (EstadoAtual != Estado.Atordoada) return false;
+        BateriasRestantes--;
+        int removidas = celulas.Length - BateriasRestantes;
+        if (removidas - 1 < celulas.Length && celulas[removidas - 1] != null) celulas[removidas - 1].SetActive(false);
+        if (BateriasRestantes <= 0)
+        {
+            Desligar();
+            return true;
+        }
+        GameManager.Instance.ShowMessage(string.Format(mensagemBateria, removidas, celulas.Length), 3f);
+        Mirar();
+        return true;
+    }
+
+    /// Finalidade: encerrar o chefe. Entradas: nenhuma. Retorno: void.
+    /// Corpo: apaga lâmpada, zona de dano e bateria; troca os objetos configurados (abre o portão),
+    /// toca o som, registra a etapa no GameManager e mostra a fala final.
+    private void Desligar()
+    {
+        EstadoAtual = Estado.Desligada;
+        if (hazardZone != null) hazardZone.SetActive(false);
+        if (bateriaInteragivel != null) bateriaInteragivel.SetActive(false);
+        if (lampada != null) lampada.enabled = false;
+        foreach (var go in ativarAoDesligar) if (go != null) go.SetActive(true);
+        foreach (var go in desativarAoDesligar) if (go != null) go.SetActive(false);
+        if (somDesligar != null) somDesligar.Play();
+        GameManager.Instance.StationCompleted(objetivoDepois);
+        GameManager.Instance.ShowMessage(mensagemFim, 6f);
+    }
+}

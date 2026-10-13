@@ -3,7 +3,7 @@ using UnityEngine;
 // Terminal de saída: só conclui a fase depois das estações.
 public class LevelExit : Interactable
 {
-    [TextArea] public string pendingMessage = "Ative a estação antes de seguir.";
+    [TextArea] public string pendingMessage = "Ative a estação e desligue a sentinela antes de seguir.";
 
     /// Finalidade: validar a saída.
     /// Entradas: nenhuma. Retorno: bool indicando se a fase foi concluída.

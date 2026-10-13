@@ -1,14 +1,16 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Controle do Nilo: caminhar, correr, saltar e deslizar num plano lateral (eixo X).
+// Controle do Nilo em terceira pessoa: caminhar, correr, saltar e deslizar em qualquer direção do plano.
+// O movimento é relativo à câmera (W afasta da câmera, A/D andam de lado).
 // Pivô do objeto fica nos pés; o colisor é uma cápsula em pé de standHeight.
 [RequireComponent(typeof(Rigidbody), typeof(CapsuleCollider))]
 public class PlayerController : MonoBehaviour
 {
     [Header("Deslocamento")]
-    public float walkSpeed = 3f;
-    public float runSpeed = 5f;
+    public float walkSpeed = 3.5f;
+    public float runSpeed = 6f;
+    public Transform cameraTransform;   // referência de direção; vazio usa Camera.main
 
     [Header("Salto")]
     public float jumpSpeed = 6f;
@@ -17,35 +19,40 @@ public class PlayerController : MonoBehaviour
     public LayerMask groundMask;
 
     [Header("Deslize")]
-    public float slideSpeed = 5.5f;
+    public float slideSpeed = 7f;
     public float slideDuration = 0.55f;
     public float slideHeight = 0.9f;
     public LayerMask headroomMask = ~0;   // o que impede levantar; excluir detritos decorativos
 
     [Header("Visual")]
-    public Transform visual;          // filho com o modelo; gira para o lado do movimento
+    public Transform visual;          // filho com o modelo; gira para a direção do movimento
     public float turnSpeed = 720f;
+
+    [Header("Dano")]
+    public float knockbackSpeed = 6f;   // empurrão ao ser atingido
+    public float knockbackTime = 0.35f; // tempo sem controle horizontal após o empurrão
 
     public bool controlEnabled = true;
     public bool IsGrounded { get; private set; }
     public bool IsSliding { get; private set; }
     public bool IsCrouched { get; private set; }
-    public int Facing { get; private set; } = 1;
+    public Vector3 Facing { get; private set; } = Vector3.forward;   // direção horizontal para onde olha
+    public Vector3 MoveDir { get; private set; }                      // direção pedida pelo teclado (mundo)
 
     private Rigidbody playerRb;
     private CapsuleCollider capsule;
     private float standHeight;
     private Vector3 standCenter;
-    private float moveInput;
     private bool runHeld;
     private bool slideRequested;
     private float jumpRequestTime = float.NegativeInfinity;
     private float lastGroundedTime = float.NegativeInfinity;
     private float slideTimer;
+    private float knockbackTimer;
 
     /// Finalidade: obter componentes e guardar as dimensões originais do colisor.
     /// Entradas: nenhuma. Retorno: void.
-    /// Corpo: busca Rigidbody e CapsuleCollider, trava rotação e profundidade (Z),
+    /// Corpo: busca Rigidbody e CapsuleCollider, trava só a rotação física (o Nilo anda em X e Z),
     /// liga interpolação e avisa no Console se a máscara de chão não foi configurada.
     void Awake()
     {
@@ -53,7 +60,7 @@ public class PlayerController : MonoBehaviour
         capsule = GetComponent<CapsuleCollider>();
         standHeight = capsule.height;
         standCenter = capsule.center;
-        playerRb.constraints = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionZ;
+        playerRb.constraints = RigidbodyConstraints.FreezeRotation;
         playerRb.interpolation = RigidbodyInterpolation.Interpolate;
         if (groundMask == 0)
             Debug.LogWarning("PlayerController: groundMask vazio, o salto nunca será liberado.", this);
@@ -61,38 +68,48 @@ public class PlayerController : MonoBehaviour
 
     /// Finalidade: ler o teclado e registrar pedidos de movimento, corrida, salto e deslize.
     /// Entradas: nenhuma (usa Keyboard.current do Input System). Retorno: void.
-    /// Corpo: lê A/D ou setas, Shift, Espaço e Ctrl/S; salto e deslize são guardados
-    /// como pedidos para o FixedUpdate consumir uma única vez. Também gira o visual.
+    /// Corpo: lê W/A/S/D, Shift, Espaço e Ctrl; converte a entrada para o mundo usando a
+    /// direção horizontal da câmera; salto e deslize são guardados como pedidos para o
+    /// FixedUpdate consumir uma única vez. Também gira o visual para a direção do movimento.
     void Update()
     {
         var kb = Keyboard.current;
         if (!controlEnabled || kb == null)
         {
-            moveInput = 0f;
+            MoveDir = Vector3.zero;
             runHeld = false;
             return;
         }
 
-        float right = (kb.dKey.isPressed || kb.rightArrowKey.isPressed) ? 1f : 0f;
-        float left = (kb.aKey.isPressed || kb.leftArrowKey.isPressed) ? 1f : 0f;
-        moveInput = right - left;
+        float x = (kb.dKey.isPressed ? 1f : 0f) - (kb.aKey.isPressed ? 1f : 0f);
+        float z = (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1f : 0f) - (kb.sKey.isPressed || kb.downArrowKey.isPressed ? 1f : 0f);
         runHeld = kb.leftShiftKey.isPressed;
 
         if (kb.spaceKey.wasPressedThisFrame) jumpRequestTime = Time.time;
-        if (kb.leftCtrlKey.wasPressedThisFrame || kb.sKey.wasPressedThisFrame) slideRequested = true;
+        if (kb.leftCtrlKey.wasPressedThisFrame || kb.cKey.wasPressedThisFrame) slideRequested = true;
 
-        if (moveInput != 0f && !IsSliding) Facing = moveInput > 0f ? 1 : -1;
+        Transform cam = cameraTransform != null ? cameraTransform : (Camera.main != null ? Camera.main.transform : null);
+        Vector3 forward = cam != null ? cam.forward : Vector3.forward;
+        forward.y = 0f;
+        if (forward.sqrMagnitude < 0.001f) forward = Vector3.forward;
+        forward.Normalize();
+        Vector3 right = Vector3.Cross(Vector3.up, forward);
+        Vector3 dir = forward * z + right * x;
+        MoveDir = dir.sqrMagnitude > 1f ? dir.normalized : dir;
+
+        if (MoveDir.sqrMagnitude > 0.01f && !IsSliding) Facing = MoveDir.normalized;
         if (visual != null)
         {
-            var goal = Quaternion.Euler(0f, Facing > 0 ? 90f : 270f, 0f);
-            visual.localRotation = Quaternion.RotateTowards(visual.localRotation, goal, turnSpeed * Time.deltaTime);
+            var goal = Quaternion.LookRotation(Facing, Vector3.up);
+            visual.rotation = Quaternion.RotateTowards(visual.rotation, goal, turnSpeed * Time.deltaTime);
         }
     }
 
     /// Finalidade: atualizar a movimentação física no passo de física.
     /// Entradas: nenhuma. Retorno: void.
-    /// Corpo: consulta o chão, processa o deslize, define a velocidade horizontal
-    /// do Rigidbody e consome o pedido de salto válido. Não há física no Update.
+    /// Corpo: consulta o chão, processa o deslize, define a velocidade horizontal do Rigidbody
+    /// (exceto durante o empurrão de dano, em que a física segue livre) e consome o pedido de
+    /// salto válido. Não há física no Update.
     void FixedUpdate()
     {
         IsGrounded = CheckGround();
@@ -105,11 +122,19 @@ public class PlayerController : MonoBehaviour
         }
         UpdateSlide(Time.fixedDeltaTime);
 
-        float speed = (runHeld && !IsCrouched) ? runSpeed : walkSpeed;
-        float vx = IsSliding ? Facing * slideSpeed : moveInput * speed;
-        var v = playerRb.linearVelocity;
-        v.x = vx;
-        playerRb.linearVelocity = v;
+        if (knockbackTimer > 0f)
+        {
+            knockbackTimer -= Time.fixedDeltaTime;
+        }
+        else
+        {
+            float speed = (runHeld && !IsCrouched) ? runSpeed : walkSpeed;
+            Vector3 horizontal = IsSliding ? Facing * slideSpeed : MoveDir * speed;
+            var v = playerRb.linearVelocity;
+            v.x = horizontal.x;
+            v.z = horizontal.z;
+            playerRb.linearVelocity = v;
+        }
 
         if (Time.time - jumpRequestTime <= jumpBuffer) TryJump();
     }
@@ -173,6 +198,19 @@ public class PlayerController : MonoBehaviour
             if (slideTimer <= 0f) IsSliding = false;
         }
         if (!IsSliding && IsCrouched && HasHeadroom()) SetCrouched(false);
+    }
+
+    /// Finalidade: empurrar o Nilo para longe de um perigo que o atingiu.
+    /// Entrada: direction, direção horizontal do empurrão. Retorno: void.
+    /// Corpo: interrompe o deslize, aplica velocidade para trás e para cima e bloqueia o
+    /// controle horizontal por knockbackTime, para o impacto ser percebido.
+    public void Knockback(Vector3 direction)
+    {
+        direction.y = 0f;
+        if (direction.sqrMagnitude < 0.001f) direction = -Facing;
+        IsSliding = false;
+        knockbackTimer = knockbackTime;
+        playerRb.linearVelocity = direction.normalized * knockbackSpeed + Vector3.up * 3f;
     }
 
     /// Finalidade: saber se a cápsula em pé caberia na posição atual.

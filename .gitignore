@@ -32,3 +32,7 @@
 *.aab
 *.unitypackage
 *.app
+
+# capturas do MCP/Editor
+Assets/Screenshots/
+Assets/Screenshots.meta

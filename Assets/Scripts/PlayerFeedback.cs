@@ -28,32 +28,41 @@ public class PlayerFeedback : MonoBehaviour
 
     private PlayerController player;
     private Rigidbody playerRb;
+    private Renderer[] renderers;
     private bool wasGrounded = true;
     private bool wasSliding;
     private bool failed;
     private float stepTimer;
     private float interactTimer;
+    private float hurtTimer;
 
-    /// Finalidade: obter o controlador e o Rigidbody do Nilo. Entradas: nenhuma. Retorno: void.
+    /// Finalidade: obter o controlador, o Rigidbody e os renderers do Nilo. Entradas: nenhuma. Retorno: void.
     void Awake()
     {
         player = GetComponent<PlayerController>();
         playerRb = GetComponent<Rigidbody>();
+        renderers = player.visual != null ? player.visual.GetComponentsInChildren<Renderer>(true) : new Renderer[0];
     }
 
     /// Finalidade: atualizar animação e efeitos a partir do estado atual.
     /// Entradas: nenhuma. Retorno: void.
-    /// Corpo: envia velocidade, chão, postura, velocidade vertical e interação ao Animator; dispara som e
-    /// partícula só na mudança de estado (salto, pouso, início do deslize), nunca a cada quadro;
-    /// toca passos em intervalos que dependem da velocidade.
+    /// Corpo: envia velocidade horizontal, chão, postura, velocidade vertical e interação ao Animator;
+    /// dispara som e partícula só na mudança de estado (salto, pouso, início do deslize), nunca a cada
+    /// quadro; toca passos em intervalos que dependem da velocidade; pisca o modelo após um golpe.
     void Update()
     {
         if (failed) return;
 
         Vector3 v = playerRb.linearVelocity;
-        float speedX = Mathf.Abs(v.x);
+        float speedX = new Vector2(v.x, v.z).magnitude;
         bool grounded = player.IsGrounded;
         if (interactTimer > 0f) interactTimer -= Time.deltaTime;
+        if (hurtTimer > 0f)
+        {
+            hurtTimer -= Time.deltaTime;
+            bool visible = hurtTimer <= 0f || ((int)(hurtTimer * 12f)) % 2 == 0;
+            foreach (var r in renderers) r.enabled = visible;
+        }
 
         if (animator != null)
         {
@@ -99,6 +108,17 @@ public class PlayerFeedback : MonoBehaviour
         if (!failed) interactTimer = interactDuration;
     }
 
+    /// Finalidade: resposta a um golpe não fatal, chamada pelo GameManager.
+    /// Entrada: duration, segundos de invulnerabilidade (tempo do piscar). Retorno: void.
+    /// Corpo: toca o som de impacto mais baixo, a partícula de impacto e inicia o piscar do modelo.
+    public void PlayHurt(float duration)
+    {
+        if (failed) return;
+        Play(failClip, 0.5f);
+        if (failBurst != null) failBurst.Play();
+        hurtTimer = duration;
+    }
+
     /// Finalidade: resposta de falha do Nilo, chamada pelo GameManager.
     /// Entradas: nenhuma. Retorno: void.
     /// Corpo: executa uma única vez: toca o som, a partícula de impacto e a animação de falha.
@@ -106,6 +126,8 @@ public class PlayerFeedback : MonoBehaviour
     {
         if (failed) return;
         failed = true;
+        hurtTimer = 0f;
+        foreach (var r in renderers) r.enabled = true;
         Play(failClip, 1f);
         if (failBurst != null) failBurst.Play();
         if (animator != null) animator.SetBool(FailedId, true);

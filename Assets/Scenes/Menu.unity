@@ -1784,7 +1784,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "A / D ou \u2190 / \u2192  \u2014  andar\nShift esquerdo  \u2014  correr\nEspa\xE7o 
+  m_Text: "W A S D  \u2014  andar (em rela\xE7\xE3o \xE0 c\xE2mera)\nMouse ou \u2190 / \u2192  \u2014  girar a c\xE2mera\nShift esquerdo  \u2014  correr\nEspa\xE7o  \u2014  saltar\nCtrl esquerdo ou C  \u2014  deslizar\nE  \u2014  interagir (esta\xE7\xE3o, bateria da sentinela, terminal)\nR  \u2014  reiniciar a fase\nEsc  \u2014  pausar\n\nVoc\xEA tem 3 cora\xE7\xF5es: fossos, tronco, pil\xE3o e a sentinela tiram um."
     \u2014  saltar\nCtrl esquerdo ou S  \u2014  deslizar\nE  \u2014  interagir com
     esta\xE7\xE3o ou terminal\nR  \u2014  reiniciar a fase\nEsc  \u2014  pausar"
 --- !u!222 &1582858250
@@ -1944,7 +1944,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "Demonstra\xE7\xE3o do 1\xBA bimestre \u2014 N\xEDvel 1: Trilha encoberta"
+  m_Text: "Demonstra\xE7\xE3o do 1\xBA bimestre \u2014 N\xEDvel 1: Trilha encoberta (3D, terceira pessoa)"
 --- !u!222 &1622445959
 CanvasRenderer:
   m_ObjectHideFlags: 0
