@@ -14,7 +14,7 @@ Game Design Document
 
 **Plano de entrega:** cinco níveis no jogo final; somente o nível 1 implementado no primeiro bimestre. O controle do personagem concentra o trabalho de jogabilidade. Os demais níveis reutilizam os mesmos sistemas.
 
-**Estado do documento:** o nível 1 está implementado e jogável do menu à tela de conclusão, com formas provisórias no lugar dos modelos de terceiros. As seções de mecânica, interface, base técnica e documentação das funções descrevem o que existe no projeto. Os níveis 2 a 5, o Terrain, o NPC e o NavMesh continuam como planejamento do segundo bimestre. O quadro abaixo resume a situação; a seção "Verificação de atendimento ao enunciado" detalha cada item.
+**Estado do documento:** o nível 1 está implementado e jogável do menu à tela de conclusão, com os modelos de terceiros já colocados na cena. O Nilo, a estação e o terminal continuam em formas montadas pela equipe. As seções de mecânica, interface, base técnica e documentação das funções descrevem o que existe no projeto. Os níveis 2 a 5, o Terrain, o NPC e o NavMesh continuam como planejamento do segundo bimestre. O quadro abaixo resume a situação; a seção "Verificação de atendimento ao enunciado" detalha cada item.
 
 | Frente | Situação em 13/10/2026 |
 |---|---|
@@ -22,7 +22,7 @@ Game Design Document
 | Nível 1: perigos, estação, saída, tutorial e falas | Implementado e testado no Editor |
 | Menu, pausa, falha com Reiniciar e conclusão parcial | Implementado e testado no Editor |
 | Conceitos dos tutoriais (Translate, AddForce, rotação, torque, vetor de prefabs, tags) | Implementado |
-| Animações, partículas e sons | Implementado (personagem e efeitos provisórios) |
+| Animações, partículas e sons | Implementado (personagem e efeitos criados pela equipe) |
 | 70 assets por nível | Nível 1 montado: 70 IDs do catálogo na cena, 73 modelos distintos de terceiros (CC0); critério a confirmar com o professor |
 | Teste completo com teclado no computador do laboratório | Pendente |
 | Níveis 2 a 5, Terrain, NPC, NavMesh, pós-processamento | Segundo bimestre |
@@ -741,11 +741,11 @@ O enunciado pede documentação de cada função: finalidade, argumentos de entr
 
 **Marco C — Conceitos e apresentação:** adicionar o vetor de prefabs, sorteio, spawn por função, força, torque, rotação, Translate secundário, tags, animações, sons e partículas. Montar o catálogo de assets do nível e conferir as evidências de Skills. Documentar todas as funções implementadas.
 
-*Situação:* código concluído em 9/10/2026, incluindo a animação de interação e o novo visual do Nilo. Catálogo pronto em `Docs/catalogo-assets.html`. Falta importar os assets.
+*Situação:* código concluído em 9/10/2026, incluindo a animação de interação e o novo visual do Nilo. Assets baixados, colocados na cena e auditados em 13/10/2026 (`Docs/auditoria-assets-nivel1.csv`).
 
 **Marco D — Entrega parcial:** revisar materiais, legibilidade e desempenho no laboratório. Atualizar o GDD com o que realmente funciona. Preparar o projeto compactado e apresentar somente o nível 1. Datas exatas dependem do calendário fornecido pelo professor; este documento não inventa prazos.
 
-*Situação:* em andamento. GDD atualizado nesta versão e pacote compactado gerado em 13/10/2026. Faltam os assets, o teste no laboratório e a revisão de desempenho.
+*Situação:* em andamento. GDD atualizado nesta versão e pacote compactado gerado em 13/10/2026. Faltam o teste no laboratório e a revisão de desempenho.
 
 ### Segundo bimestre
 
