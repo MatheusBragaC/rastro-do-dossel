@@ -6,7 +6,7 @@ Game Design Document
 
 **Versão:** 0.6 — atualização com o que foi implementado e testado na primeira entrega.
 
-**Integrantes:** Matheus Braga, Moruan Mattar, Nícolas Muciaccia e Nícolas Ramos. **Turma e professor:** a preencher pela equipe.
+**Integrantes:** Matheus Braga, Moruan Mattar, Nícolas Muciaccia e Nícolas Ramos. **Turma:** CC6N. **Professor:** PhD. Saulo Ribeiro.
 
 **Data desta revisão:** 13 de outubro de 2026.
 
