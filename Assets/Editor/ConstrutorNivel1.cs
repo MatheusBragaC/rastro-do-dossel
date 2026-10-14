@@ -10,7 +10,7 @@ using UnityEngine.UI;
 // Monta o nível 1 em terceira pessoa a partir de dados (trilha, perigos, posto, arena da sentinela
 // e vegetação). Menu: Rastro do Dossel > Montar Nível 1 (3D). Refaz o cenário; mantém câmera, luz,
 // Nilo, Canvas, GameManager, EventSystem, música e a estação do viveiro (só a reposiciona).
-public static class ConstrutorNivel1
+public static partial class ConstrutorNivel1
 {
     private const string ScenePath = "Assets/Scenes/Nivel1_TrilhaEncoberta.unity";
 
@@ -45,29 +45,31 @@ public static class ConstrutorNivel1
         var scene = EditorSceneManager.OpenScene(ScenePath);
         rng = new System.Random(7);
         rngVar = new System.Random(3);
+        ocupados.Clear(); registrarOcupacao = false;
         CarregarMateriais();
 
-        foreach (var nome in new[] { "Terreno", "Perigos", "Tutorial", "Cenario", "Cenario_Assets", "Chefe", "Luzes" })
+        foreach (var nome in new[] { "Terreno", "Perigos", "Tutorial", "Cenario", "Cenario_Assets", "Chefe", "Luzes", "Coletaveis", "Volume_Global" })
         {
             var velho = GameObject.Find(nome);
             if (velho != null) Object.DestroyImmediate(velho);
         }
 
-        var terreno = Raiz("Terreno");
-        var perigos = Raiz("Perigos");
-        var tutorial = Raiz("Tutorial");
-        var cenario = Raiz("Cenario");
-        var assets = Raiz("Cenario_Assets");
-        var chefe = Raiz("Chefe");
-        var luzes = Raiz("Luzes");
-        var veg = Filho(assets, "Vegetacao").transform;
-        var rochas = Filho(assets, "Rochas").transform;
-        var constr = Filho(assets, "Construcoes").transform;
-        var tec = Filho(assets, "Tecnologia").transform;
-        var recup = Filho(assets, "Recuperacao").transform;
-        var apoio = Filho(assets, "Apoio").transform;
-        var armad = Filho(assets, "Armadilhas").transform;
-        var locais = Filho(assets, "Locais_N1").transform;
+        terreno = Raiz("Terreno");
+        perigos = Raiz("Perigos");
+        tutorial = Raiz("Tutorial");
+        cenario = Raiz("Cenario");
+        assets = Raiz("Cenario_Assets");
+        chefe = Raiz("Chefe");
+        luzes = Raiz("Luzes");
+        coletaveis = Raiz("Coletaveis");
+        veg = Filho(assets, "Vegetacao").transform;
+        rochas = Filho(assets, "Rochas").transform;
+        constr = Filho(assets, "Construcoes").transform;
+        tec = Filho(assets, "Tecnologia").transform;
+        recup = Filho(assets, "Recuperacao").transform;
+        apoio = Filho(assets, "Apoio").transform;
+        armad = Filho(assets, "Armadilhas").transform;
+        locais = Filho(assets, "Locais_N1").transform;
 
         // ---------- chão, fossos e paredes ----------
         for (int i = 0; i < Trilha.Length; i++)
@@ -103,154 +105,43 @@ public static class ConstrutorNivel1
             Object.DestroyImmediate(parede.GetComponent<MeshFilter>());
         }
         // portão fechado entre a arena e a saída: abre quando a sentinela desliga
-        var portaoVigilia = Caixa(terreno, "Portao_Vigilia", new Vector3(108f, 1.5f, 98f), new Vector3(0.5f, 3f, 8f), matTerminal, "Ground", "Ground");
+        portaoVigilia = Caixa(terreno, "Portao_Vigilia", new Vector3(108f, 1.5f, 98f), new Vector3(0.5f, 3f, 8f), matTerminal, "Ground", "Ground");
         Modelo("C06_Barreira_Vigilia_portao_1", "Assets/Terceiros/PolyHaven/concrete_road_barrier/concrete_road_barrier_1k.fbx", new Vector3(107.6f, 0f, 96f), 90f, 1.04f, portaoVigilia.transform);
         Modelo("C06_Barreira_Vigilia_portao_2", "Assets/Terceiros/PolyHaven/concrete_road_barrier/concrete_road_barrier_1k.fbx", new Vector3(107.6f, 0f, 100f), 90f, 1.04f, portaoVigilia.transform);
         Caixa(portaoVigilia.transform, "Portao_Placa", new Vector3(107.7f, 2.2f, 98f), new Vector3(0.05f, 0.6f, 1.6f), matPerigo, "Default", "Untagged");
 
-        // ---------- trecho A: Várzea Alta ----------
-        Caixa(cenario, "N1-01_Portao_VarzeaAlta_Poste", new Vector3(-1.4f, 1.3f, -5f), new Vector3(0.25f, 2.6f, 0.25f), matMadeira);
-        Caixa(cenario, "N1-01_Portao_VarzeaAlta_Poste", new Vector3(1.4f, 1.3f, -5f), new Vector3(0.25f, 2.6f, 0.25f), matMadeira);
-        Caixa(cenario, "N1-01_Portao_VarzeaAlta_Viga", new Vector3(0f, 2.6f, -5f), new Vector3(3.1f, 0.25f, 0.3f), matMadeira);
-        Modelo("C07_Fogueira", "Assets/Terceiros/PolyHaven/stone_fire_pit/stone_fire_pit_1k.fbx", new Vector3(-2.6f, 0.6f, -6.5f), 0f, 82.84f, constr);
-        Luz(luzes, "Luz_Fogueira", new Vector3(-2.6f, 1.2f, -6.5f), new Color(1f, 0.55f, 0.2f), 2.6f, 11f);
-        Modelo("P02_Caixote_madeira", "Assets/Terceiros/PolyHaven/wooden_crate_02/wooden_crate_02_1k.fbx", new Vector3(2.8f, 0f, -6.8f), 20f, 0.86f, apoio);
-        Modelo("C08_Lampiao", "Assets/Terceiros/PolyHaven/wooden_lantern_01/wooden_lantern_01_1k.fbx", new Vector3(1.4f, 2.1f, -5f), 0f, 0.85f, constr);
-        Luz(luzes, "Luz_Portao", new Vector3(1.4f, 2.0f, -4.6f), new Color(1f, 0.75f, 0.4f), 1.6f, 8f);
-        Modelo("C03_Atracadouro", "Assets/Terceiros/OpenGameArt/3TD_Tropical/Atracadouro/Tropical_Jetty01.DAE", new Vector3(-7.5f, 1.9f, -13f), 0f, 0.9f, constr);
-        Modelo("R06_Paredao_inicio", "Assets/Terceiros/PolyHaven/rock_face_01/rock_face_01_1k.fbx", new Vector3(0f, 1f, -12f), 0f, 106.68f, rochas);
-        Caixa(cenario, "Placa_Controles", new Vector3(3.3f, 1.2f, 1f), new Vector3(0.05f, 0.7f, 1.2f), matMadeira);
-        Caixa(cenario, "Placa_Controles_Poste", new Vector3(3.3f, 0.5f, 1f), new Vector3(0.08f, 0.9f, 0.08f), matMadeira);
-        Caixa(cenario, "N1-02_Marco_Treinamento", new Vector3(0f, 0.8f, 10f), new Vector3(0.15f, 1.5f, 0.15f), matMarco);
-        var raiz = Caixa(terreno, "Obstaculo_Raiz", new Vector3(0f, 0.25f, 18f), new Vector3(8f, 0.5f, 0.6f), matTronco, "Ground", "Ground");
-        Modelo("V10_Raizes", "Assets/Terceiros/PolyHaven/root_cluster_01/root_cluster_01_1k.fbx", new Vector3(-6.5f, 0f, 17f), 90f, 72.77f, veg);
-        Modelo("V18_Raiz", "Assets/Terceiros/PolyHaven/single_root/single_root_1k.fbx", new Vector3(5.6f, 0f, 19f), 0f, 0.98f, veg);
-        Modelo("V19_Musgo", "Assets/Terceiros/PolyHaven/moss_01/moss_01_1k.fbx", new Vector3(2.5f, 0.5f, 18f), 0f, 6f, veg);   // musgo sobre a raiz atravessada
-        Modelo("R01_Pedregulho", "Assets/Terceiros/PolyHaven/boulder_01/boulder_01_1k.fbx", new Vector3(-6.5f, 0.1f, 6f), 0f, 1.59f, rochas);
-        Modelo("R09_Cascalho", "Assets/Terceiros/PolyHaven/stone_01/stone_01_1k.fbx", new Vector3(6f, 0f, 24f), 0f, 4.87f, rochas);
-        Modelo("V08_Tronco_caido", "Assets/Terceiros/PolyHaven/dead_tree_trunk_02/dead_tree_trunk_02_1k.fbx", new Vector3(-7f, 0.3f, 26f), 30f, 0.99f, veg);
-        Modelo("V09_Toco", "Assets/Terceiros/PolyHaven/tree_stump_01/tree_stump_01_1k.fbx", new Vector3(5.4f, 0f, 13f), 0f, 37.73f, veg);
-        Modelo("V20_Galhos_secos", "Assets/Terceiros/PolyHaven/dry_branches_medium_01/dry_branches_medium_01_1k.fbx", new Vector3(-5.6f, 0f, 28f), 0f, 1.13f, veg);
-        for (int i = 0; i < 6; i++) Modelo(i == 0 ? "C04_Cerca_estacas_1" : "C04_Cerca_estacas_" + (i + 1), "Assets/Terceiros/OpenGameArt/WoodKit1/Stick_1.fbx", new Vector3(-4.3f, 0.6f, -2f + i * 0.6f), i * 23f, 0.56f, constr);
-
-        // ---------- trecho B: marca antiga e fosso 1 ----------
-        var arvoreMarcada = Modelo("N1-03_Arvore_marcada", "Assets/Terceiros/OpenGameArt/3TD_Tropical/Sumauma/CiabaTree_01.dae", new Vector3(-4.6f, 0f, 35f), 0f, 1.46f, locais);
-        Caixa(cenario, "Marca_Antiga_Nilo", new Vector3(-3.6f, 1.7f, 35f), new Vector3(0.05f, 0.3f, 0.3f), matLenco).transform.rotation = Quaternion.Euler(45f, 0f, 0f);
-        Modelo("C08_Lampiao_marca", "Assets/Terceiros/PolyHaven/wooden_lantern_01/wooden_lantern_01_1k.fbx", new Vector3(-3.6f, 2.4f, 35.8f), 0f, 0.85f, constr);
-        Luz(luzes, "Luz_Marca", new Vector3(-3.3f, 2.3f, 35.8f), new Color(1f, 0.75f, 0.4f), 1.5f, 8f);
-        Placa(cenario, "A05_Placa_perigo_1", new Vector3(3.4f, 0f, 38f));
-        Fosso(perigos, armad, 1, Fossos[0], new Vector3(0f, 0f, 36.5f));
-        for (int i = 0; i < 4; i++) Modelo(i == 0 ? "C10_Alambrado_Vigilia" : "C10_Alambrado_Vigilia_" + (i + 1), "Assets/Terceiros/PolyHaven/modular_chainlink_fence/modular_chainlink_fence_1k.fbx", new Vector3(4.6f, 0f, 43f + i * 2f), 90f, 1f, constr);
-        Modelo("C09_Bloqueio_Vigilia", "Assets/Terceiros/PolyHaven/concrete_road_barrier_02/concrete_road_barrier_02_1k.fbx", new Vector3(-3.2f, 0f, 47f), 15f, 1.02f, constr);
-        Modelo("R02_Pedras_musgo_1", "Assets/Terceiros/PolyHaven/rock_moss_set_01/rock_moss_set_01_1k.fbx", new Vector3(8.5f, 0f, 30f), 0f, 0.5f, rochas);
-        Modelo("R04_Rocha_erodida", "Assets/Terceiros/PolyHaven/rock_07/rock_07_1k.fbx", new Vector3(-6.5f, 0f, 55f), 0f, 7.65f, rochas);
-        Modelo("R08_Encosta", "Assets/Terceiros/PolyHaven/mountainside/mountainside_1k.fbx", new Vector3(-34f, 0.1f, 30f), 270f, 1.76f, rochas).transform.localScale = new Vector3(1.76f, 0.52f, 1.33f);
-
-        // ---------- trecho C: galhos baixos e tronco giratório ----------
-        Galho(perigos, cenario, armad, 1, new Vector3(12f, 0f, 56f), true);
-        Galho(perigos, cenario, armad, 2, new Vector3(19f, 0f, 56f), true);
-        Modelo("C08_Lampiao_galho", "Assets/Terceiros/PolyHaven/wooden_lantern_01/wooden_lantern_01_1k.fbx", new Vector3(15.5f, 2.3f, 60.3f), 0f, 0.85f, constr);
-        Luz(luzes, "Luz_Galhos", new Vector3(15.5f, 2.2f, 59.8f), new Color(1f, 0.75f, 0.4f), 1.5f, 9f);
-        TroncoGiratorio(perigos, armad, new Vector3(32f, 0f, 56f));
-        Luz(luzes, "Luz_Tronco", new Vector3(32f, 4.2f, 56f), new Color(1f, 0.6f, 0.3f), 1.8f, 10f);
-        Modelo("R03_Pedras_musgo_2", "Assets/Terceiros/PolyHaven/rock_moss_set_02/rock_moss_set_02_1k.fbx", new Vector3(24f, 0f, 63.5f), 0f, 0.48f, rochas);
-        Modelo("R10_Rochas_tropicais", "Assets/Terceiros/OpenGameArt/3TD_Tropical/Rochas/GroupRocks01.DAE", new Vector3(40f, 0.3f, 49f), 0f, 17.44f, rochas);
-        Modelo("R05_Rocha_09", "Assets/Terceiros/PolyHaven/rock_09/rock_09_1k.fbx", new Vector3(47f, 0f, 56f), 0f, 27.32f, rochas);
-
-        // ---------- trecho D: fosso 2, pilão e bloqueio ----------
-        Placa(cenario, "A05_Placa_perigo_2", new Vector3(43.4f, 0f, 63.5f));
-        Fosso(perigos, armad, 2, Fossos[1], new Vector3(40f, 0f, 62f));
-        Pilao(perigos, cenario, armad, new Vector3(40f, 0f, 76f));
-        Galho(perigos, cenario, armad, 3, new Vector3(40f, 0f, 84f), false);
-        Modelo("C06_Barreira_Vigilia", "Assets/Terceiros/PolyHaven/concrete_road_barrier/concrete_road_barrier_1k.fbx", new Vector3(42.5f, 0f, 89f), 0f, 1.04f, constr);
-        Modelo("T09_Holofote", "Assets/Terceiros/PolyHaven/portable_searchlight/portable_searchlight_1k.fbx", new Vector3(45.2f, 0.2f, 90f), 230f, 138.13f, tec);
-        Luz(luzes, "Luz_Holofote_D", new Vector3(44.2f, 1.6f, 89.6f), new Color(0.85f, 0.95f, 1f), 2.2f, 12f);
-        Modelo("T02_Sensor_camera", "Assets/Terceiros/PolyHaven/security_camera_01/security_camera_01_1k.fbx", new Vector3(35.6f, 2.6f, 90f), 120f, 1.22f, tec);
-        Caixa(cenario, "Poste_camera_D", new Vector3(35.6f, 1.23f, 90.0f), new Vector3(0.12f, 2.45f, 0.12f), matTerminal);   // suporte da câmera
-        Modelo("T07_Postes_energia", "Assets/Terceiros/PolyHaven/modular_electricity_poles/modular_electricity_poles_1k.fbx", new Vector3(30f, 0f, 80f), 90f, 1f, tec);
-
-        // ---------- trecho E: posto do viveiro ----------
-        var estacao = GameObject.Find("Estacao_Viveiro");
-        if (estacao != null)
-        {
-            // a estação foi montada ao longo de X em (82..99, 0, 0..3); leva para o posto
-            estacao.transform.position = new Vector3(-34f, 0f, 97.2f);
-            var terminal = estacao.transform.Find("Saida_Terminal");
-            if (terminal != null) { terminal.SetParent(null); terminal.position = new Vector3(114.5f, 0f, 98f); terminal.rotation = Quaternion.Euler(0f, -90f, 0f); terminal.SetParent(estacao.transform, true); }
-            foreach (Transform t in estacao.transform) if (t.name == "Placa_Viveiro") t.name = "N1-05_Placa_viveiro";
-            var est = estacao.GetComponentInChildren<InteractableStation>();
-            if (est != null) est.nextObjective = "atravessar o posto de observação da Vigília";
-        }
-        Modelo("C02_Cabana_selva", "Assets/Terceiros/OpenGameArt/3TD_Tropical/CabanaSelva/JungleHut01.DAE", new Vector3(60f, 1.7f, 106f), 180f, 1.03f, constr);
-        Modelo("C01_Pier_madeira", "Assets/Terceiros/PolyHaven/modular_wooden_pier/modular_wooden_pier_1k.fbx", new Vector3(70f, 0.5f, 106f), 90f, 0.47f, constr);
-        Modelo("C05_Escada", "Assets/Terceiros/PolyHaven/wooden_ladder/wooden_ladder_1k.fbx", new Vector3(63.5f, 0f, 104.6f), 0f, 1.5f, constr);
-        Modelo("P01_Caixote_militar", "Assets/Terceiros/PolyHaven/wooden_military_crate/wooden_military_crate_1k.fbx", new Vector3(66f, 0f, 102.5f), 15f, 0.89f, apoio);
-        Modelo("P03_Tambor", "Assets/Terceiros/PolyHaven/barrel_03/barrel_03_1k.fbx", new Vector3(48f, 0.9f, 102.8f), 0f, 96.72f, apoio).transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-        Modelo("P04_Barris_madeira", "Assets/Terceiros/PolyHaven/wooden_barrels_01/wooden_barrels_01_1k.fbx", new Vector3(72f, 0f, 102f), 0f, 0.68f, apoio);
-        Modelo("P05_Banco", "Assets/Terceiros/PolyHaven/painted_wooden_bench/painted_wooden_bench_1k.fbx", new Vector3(57f, 0.3f, 102.5f), 0f, 103.01f, apoio);
-        Modelo("T01_Radio", "Assets/Terceiros/PolyHaven/vintage_radio_transceiver/vintage_radio_transceiver_1k.fbx", new Vector3(57f, 0.8f, 102.5f), 0f, 0.73f, tec);
-        Modelo("T03_Lanterna_sinal", "Assets/Terceiros/PolyHaven/signal_flashlight/signal_flashlight_1k.fbx", new Vector3(57.6f, 0.8f, 102.6f), 0f, 1.33f, tec);
-        Modelo("T04_Gerador", "Assets/Terceiros/PolyHaven/portable_generator/portable_generator_1k.fbx", new Vector3(64f, 0f, 93f), 0f, 0.98f, tec);
-        Modelo("T05_Multimetro", "Assets/Terceiros/PolyHaven/retro_multimeter/retro_multimeter_1k.fbx", new Vector3(62.5f, 0.5f, 93f), 0f, 0.79f, tec);
-        Modelo("T06_Cabos", "Assets/Terceiros/PolyHaven/modular_electric_cables/modular_electric_cables_1k.fbx", new Vector3(65f, 0f, 93.2f), 0f, 0.77f, tec);
-        Modelo("T08_Caixa_forca", "Assets/Terceiros/PolyHaven/power_box_01/power_box_01_1k.fbx", new Vector3(61f, 0.3f, 93f), 0f, 0.99f, tec);
-        Modelo("T10_Caixa_eletrica", "Assets/Terceiros/PolyHaven/utility_box_01/utility_box_01_1k.fbx", new Vector3(66f, 0.6f, 93f), 0f, 254.63f, tec);
-        Modelo("E01_Muda_vaso", "Assets/Terceiros/PolyHaven/potted_plant_02/potted_plant_02_1k.fbx", new Vector3(50f, 0f, 103f), 0f, 0.83f, recup);
-        Modelo("E02_Bandeja_mudas", "Assets/Terceiros/PolyHaven/seeding_tray_01/seeding_tray_01_1k.fbx", new Vector3(51.2f, 0.1f, 103f), 0f, 90.82f, recup);
-        Modelo("E03_Regador", "Assets/Terceiros/PolyHaven/watering_can_metal_01/watering_can_metal_01_1k.fbx", new Vector3(52f, 0.5f, 103f), 0f, 183.23f, recup);
-        Modelo("E04_Lixeira", "Assets/Terceiros/PolyHaven/metal_trash_can/metal_trash_can_1k.fbx", new Vector3(45.5f, 0f, 102.5f), 0f, 0.99f, recup);
-        Modelo("E05_Mangueira", "Assets/Terceiros/PolyHaven/garden_hose_wall_mounted_01/garden_hose_wall_mounted_01_1k.fbx", new Vector3(53f, 0.3f, 103.2f), 0f, 0.9f, recup);
-        Modelo("E06_Saco_adubo", "Assets/Terceiros/PolyHaven/compost_bag_02/compost_bag_02_1k.fbx", new Vector3(46.8f, 0.2f, 102.8f), 20f, 76.32f, recup);
-        Modelo("E07_Vaso_barro", "Assets/Terceiros/PolyHaven/planter_pot_clay/planter_pot_clay_1k.fbx", new Vector3(54f, 0.1f, 103f), 0f, 94.89f, recup);
-        Modelo("E08_Jardineira", "Assets/Terceiros/PolyHaven/planter_box_01/planter_box_01_1k.fbx", new Vector3(55f, 0.2f, 103.2f), 0f, 98.62f, recup);
-        Modelo("E09_Pa", "Assets/Terceiros/PolyHaven/rusted_spade_01/rusted_spade_01_1k.fbx", new Vector3(49f, 0.5f, 103.2f), 0f, 95.8f, recup).transform.rotation = Quaternion.Euler(280f, 0f, 8f);
-        Modelo("E10_Aspersor", "Assets/Terceiros/PolyHaven/garden_sprinkler_01/garden_sprinkler_01_1k.fbx", new Vector3(56f, 0.2f, 103.5f), 0f, 111.24f, recup);
-        for (int i = 0; i < 2; i++)
-        {
-            // a terra do vaso tem 54 mil triângulos e fica escondida pelas folhas: só a muda principal (E01) a mantém
-            var muda = Modelo("E01_Muda_viveiro_" + (i + 1), "Assets/Terceiros/PolyHaven/potted_plant_02/potted_plant_02_1k.fbx", new Vector3(49.2f + i * 0.5f, 0f, 101.3f), 47f * i, 1.13f, recup);
-            var terra = muda.transform.Find("potted_plant_02_dirt");
-            if (terra != null) terra.gameObject.SetActive(false);
-        }
-        Sinalizador(cenario, new Vector3(58f, 0f, 94f));
-        Luz(luzes, "Luz_Posto_1", new Vector3(52f, 2.4f, 99f), new Color(1f, 0.8f, 0.5f), 2.2f, 12f);
-        Luz(luzes, "Luz_Posto_2", new Vector3(66f, 2.4f, 99f), new Color(1f, 0.8f, 0.5f), 2.2f, 12f);
-        Modelo("C08_Lampiao_posto", "Assets/Terceiros/PolyHaven/wooden_lantern_01/wooden_lantern_01_1k.fbx", new Vector3(66f, 2.4f, 99.3f), 0f, 0.85f, constr);
-        Caixa(cenario, "Lampiao_posto_poste", new Vector3(66f, 1.2f, 99.3f), new Vector3(0.12f, 2.4f, 0.12f), matMadeira);
+        registrarOcupacao = true;
+        Inicio();             // trecho A: Várzea Alta
+        MarcaEFosso1();       // trecho B: marca antiga e fosso 1
+        CorredorDosGalhos();  // trecho C: barreiras altas e tronco giratório
+        Bloqueio();           // trecho D: fosso 2, pilão e bloqueio da Vigília
+        Posto();              // trecho E: posto do viveiro
 
         // ---------- trecho F: arena da sentinela ----------
         Sentinela(chefe, luzes, tec, constr, veg, portaoVigilia);
+        ArenaDecor();
 
         // ---------- trecho G: saída ----------
-        Modelo("R07_Paredao_fim", "Assets/Terceiros/PolyHaven/rock_face_02/rock_face_02_1k.fbx", new Vector3(120f, 0.4f, 98f), 270f, 172.77f, rochas);
+        ModeloAlvo("R07_Paredao_fim", PH + "rock_face_02/rock_face_02_1k.fbx", new Vector3(120.4f, 0f, 98f), 270f, 9f, false, rochas);
         Luz(luzes, "Luz_Saida", new Vector3(113f, 2.5f, 98f), new Color(0.6f, 1f, 0.8f), 2f, 9f);
 
-        // ---------- tutoriais e falas ----------
-        Gatilho(tutorial, "Fala_Abertura", new Vector3(0f, 1.5f, -2f), new Vector3(8f, 3f, 2f), "MARA (rádio): A travessia fecha ao amanhecer. Leve o módulo até a antena. Eu acompanho enquanto houver sinal.\nNILO: Conheço o começo da trilha. Vou avisando.", 7f);
-        Gatilho(tutorial, "Tutorial_Andar", new Vector3(0f, 1.5f, 3f), new Vector3(8f, 3f, 2f), "W A S D para andar; mouse ou ← → giram a câmera.\nShift para correr. Pare junto ao marco amarelo.", 6f);
-        Gatilho(tutorial, "Tutorial_Salto", new Vector3(0f, 1.5f, 14f), new Vector3(8f, 3f, 2f), "Espaço para saltar a raiz.", 4f);
-        Gatilho(tutorial, "Fala_Marca", new Vector3(0f, 1.5f, 32f), new Vector3(8f, 3f, 2f), "NILO: Essa marca fui eu que fiz. As estacas vieram depois.", 5f);
-        Gatilho(tutorial, "Tutorial_Fosso", new Vector3(0f, 1.5f, 36.5f), new Vector3(8f, 3f, 2f), "Fosso com estacas à frente: corra e salte.\nCair custa um coração.", 5f);
-        Gatilho(tutorial, "Tutorial_Deslize", new Vector3(7f, 1.5f, 56f), new Vector3(2f, 3f, 8f), "Ctrl para deslizar sob o galho.\nO deslize começa no chão.", 5f);
-        Gatilho(tutorial, "Tutorial_Tronco", new Vector3(25f, 1.5f, 56f), new Vector3(2f, 3f, 8f), "Tronco giratório: espere ele passar e atravesse.\nEncostar custa um coração.", 5f);
-        Gatilho(tutorial, "Tutorial_Pilao", new Vector3(40f, 1.5f, 71f), new Vector3(8f, 3f, 2f), "Pilão: observe o ciclo e passe quando ele subir.", 5f);
-        Gatilho(tutorial, "Chegada_Posto", new Vector3(40f, 1.5f, 93.5f), new Vector3(8f, 3f, 2f), "Área segura: posto do viveiro. Use E na caixa de ferramentas.", 5f);
-        var entradaArena = Gatilho(tutorial, "Entrada_Arena", new Vector3(82f, 1.5f, 98f), new Vector3(2f, 3f, 12f), "MARA (rádio): Sinal estranho à frente... é uma sentinela automática da Vigília. Ela avança em linha reta: desvie e, quando ela bater e travar, retire as baterias com E.", 8f);
-        var sentinela = GameObject.Find("Chefe/Sentinela").GetComponent<SentinelaChefe>();
-        UnityEventTools.AddPersistentListener(entradaArena.GetComponent<TutorialTrigger>().onEnter, sentinela.Acordar);
+        Tutoriais();
+        Coletaveis();
+        Lanternas();
+        VagaLumes();
 
         // ---------- vegetação espalhada ----------
+        registrarOcupacao = false;
         Vegetacao(veg);
         // plantas e pedras apoiadas no chão pela base real do modelo (os pivôs variam de pacote para pacote)
-        foreach (Transform t in veg) Assentar(t.gameObject, 0.04f);
-        foreach (Transform t in rochas) if (!t.name.StartsWith("R06") && !t.name.StartsWith("R07") && !t.name.StartsWith("R08")) Assentar(t.gameObject, 0.12f);
-        foreach (Transform t in armad) if (t.name.StartsWith("A02")) Assentar(t.gameObject, 0.03f);
-        Assentar(GameObject.Find("Cenario_Assets/Vegetacao/V19_Musgo"), -0.5f);   // em cima da raiz (topo em 0,5)
+        foreach (Transform t in veg) Assentar(t.gameObject, t.name.StartsWith("V19") ? -0.55f : 0.04f);
+        foreach (Transform t in rochas) if (!t.name.StartsWith("R06") && !t.name.StartsWith("R07") && !t.name.StartsWith("R08")) Assentar(t.gameObject, 0.1f);
 
         // ---------- iluminação, HUD, Nilo, câmera, GameManager ----------
         ConfigurarAmbiente();
         ConfigurarNilo();
         ConfigurarHud();
+        PosProcessamento();
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
@@ -275,20 +166,6 @@ public static class ConstrutorNivel1
             var e = Modelo("A01_Estaca_" + n + "_" + (i + 1), "Assets/Terceiros/OpenGameArt/WoodKit1/Stick_2.fbx", new Vector3(x, -3f, z), (float)rng.NextDouble() * 360f, 0.4f, armad);
             e.transform.localScale = new Vector3(0.25f + (float)rng.NextDouble() * 0.6f, 0.6f, 0.25f + (float)rng.NextDouble() * 0.6f);
             Caixa(perigos, "Estaca", new Vector3(x, -2.3f, z), new Vector3(0.1f, 1.4f, 0.1f), matEstaca);
-        }
-    }
-
-    private static void Galho(Transform perigos, Transform cenario, Transform armad, int n, Vector3 pos, bool alongZ)
-    {
-        // barra sólida baixa cruzando o corredor: só passa deslizando (altura livre 1,05 m)
-        var g = Caixa(perigos, "Galho_" + n, pos + Vector3.up * 1.2f, alongZ ? new Vector3(0.3f, 0.3f, 8f) : new Vector3(8f, 0.3f, 0.3f), matTronco, true);
-        // galho caído na mata, ao lado da barra (o modelo tem 1,3 m e não cobre a barra de 8 m)
-        var lado = alongZ ? pos + new Vector3(0f, 0f, 5.8f) : pos + new Vector3(5.8f, 0f, 0f);
-        Modelo("A02_Galho_" + n + "_visual", "Assets/Terceiros/PolyHaven/dead_quiver_branch_02/dead_quiver_branch_02_1k.fbx", lado, 37f * n, 1.8f, armad);
-        for (int k = -1; k <= 1; k += 2)
-        {
-            var sp = alongZ ? pos + new Vector3(0f, 0.5f, k * 3.8f) : pos + new Vector3(k * 3.8f, 0.5f, 0f);
-            Caixa(cenario, "Galho_" + n + "_Suporte", sp, new Vector3(0.15f, 1.05f, 0.15f), matMadeira);
         }
     }
 
@@ -371,8 +248,7 @@ public static class ConstrutorNivel1
             roda.AddComponent<MeshFilter>().sharedMesh = PrimitiveMesh(PrimitiveType.Cylinder);
             roda.AddComponent<MeshRenderer>().sharedMaterial = matRocha;
         }
-        var holofote = Modelo("T09_Holofote_sentinela", "Assets/Terceiros/PolyHaven/portable_searchlight/portable_searchlight_1k.fbx", Vector3.zero, 0f, 138.13f, raiz.transform);
-        holofote.transform.localPosition = new Vector3(0f, 2.2f, -0.4f); holofote.transform.localRotation = Quaternion.identity;
+        ModeloAlvo("T09_Holofote_sentinela", PH + "portable_searchlight/portable_searchlight_1k.fbx", new Vector3(0f, 2.2f, -0.4f), 0f, 0.8f, false, raiz.transform, false);
         var lampGo = new GameObject("Lampada");
         lampGo.transform.SetParent(raiz.transform); lampGo.transform.localPosition = new Vector3(0f, 2.6f, 0.4f);
         var lamp = lampGo.AddComponent<Light>(); lamp.type = LightType.Point; lamp.range = 14f; lamp.intensity = 3f; lamp.color = boss.corMira;
@@ -385,6 +261,15 @@ public static class ConstrutorNivel1
         var zc = zona.AddComponent<BoxCollider>(); zc.isTrigger = true; zc.size = new Vector3(3.2f, 2.2f, 4.8f);
         zona.AddComponent<Hazard>().mode = Hazard.Mode.Hit;
         boss.hazardZone = zona;
+        // braço de varredura do ataque de giro: faixa listrada que se estende à frente e gira com a máquina
+        var braco = new GameObject("Braco_Giro");
+        braco.transform.SetParent(raiz.transform); braco.transform.position = new Vector3(0f, 0.6f, 2.95f);
+        braco.layer = LayerMask.NameToLayer("Hazard"); braco.tag = "Hazard";
+        var bcol = braco.AddComponent<BoxCollider>(); bcol.isTrigger = true; bcol.size = new Vector3(0.9f, 1.1f, 2.9f);
+        braco.AddComponent<Hazard>().mode = Hazard.Mode.Hit;
+        Caixa(braco.transform, "Braco_Barra", new Vector3(0f, 0.6f, 2.95f), new Vector3(0.45f, 0.4f, 2.8f), matPerigo, false);
+        Caixa(braco.transform, "Braco_Ponta", new Vector3(0f, 0.65f, 4.3f), new Vector3(0.85f, 0.85f, 0.45f), matLedVermelho, false);
+        boss.bracoGiro = braco;
         // baterias nas costas
         var celulas = new GameObject[3];
         for (int i = 0; i < 3; i++)
@@ -409,7 +294,7 @@ public static class ConstrutorNivel1
         Caixa(torre.transform, "Torre_Piso", new Vector3(105f, 5f, 109.5f), new Vector3(3.2f, 0.2f, 3.2f), matMadeira);
         Caixa(torre.transform, "Torre_Grade", new Vector3(105f, 5.6f, 108f), new Vector3(3.2f, 1f, 0.08f), matMadeira);
         Caixa(torre.transform, "Torre_Teto", new Vector3(105f, 7.2f, 109.5f), new Vector3(3.6f, 0.15f, 3.6f), matMadeira);
-        Modelo("T09_Holofote_torre", "Assets/Terceiros/PolyHaven/portable_searchlight/portable_searchlight_1k.fbx", new Vector3(105f, 5.3f, 108.6f), 180f, 138.13f, tec);
+        ModeloAlvo("T09_Holofote_torre", PH + "portable_searchlight/portable_searchlight_1k.fbx", new Vector3(105f, 5.1f, 108.6f), 180f, 0.8f, false, tec, false);
         Luz(luzes, "Luz_Torre", new Vector3(104.5f, 5.4f, 107.8f), new Color(0.85f, 0.95f, 1f), 3f, 18f);
         Modelo("T02_Sensor_camera_arena", "Assets/Terceiros/PolyHaven/security_camera_01/security_camera_01_1k.fbx", new Vector3(81f, 3.2f, 111f), 150f, 1.22f, tec);
         Caixa(chefe, "Poste_camera_arena", new Vector3(81.0f, 1.53f, 111.0f), new Vector3(0.12f, 3.05f, 0.12f), matTerminal);   // suporte da câmera
@@ -422,65 +307,8 @@ public static class ConstrutorNivel1
         }
         for (int i = 0; i < 12; i++)   // painéis de 2 m enfileirados no fundo da arena
             Modelo("C10_Alambrado_arena_" + (i + 1), "Assets/Terceiros/PolyHaven/modular_chainlink_fence/modular_chainlink_fence_1k.fbx", new Vector3(83f + i * 2f, 0f, 112.3f), 0f, 1f, constr);
-        Modelo("V09_Toco_arena", "Assets/Terceiros/PolyHaven/tree_stump_01/tree_stump_01_1k.fbx", new Vector3(83f, 0f, 114.5f), 40f, 37.73f, veg);
+        ModeloAlvo("V09_Toco_arena", PH + "tree_stump_01/tree_stump_01_1k.fbx", new Vector3(83f, 0f, 114.5f), 40f, 0.7f, true, veg, false);
         Modelo("V08_Tronco_caido_arena", "Assets/Terceiros/PolyHaven/dead_tree_trunk_02/dead_tree_trunk_02_1k.fbx", new Vector3(96f, 0f, 81f), 0f, 0.99f, veg);
-    }
-
-    private static void Vegetacao(Transform veg)
-    {
-        string[] arvores = {
-            "Assets/Terceiros/OpenGameArt/3TD_Tropical/Sumauma/CiabaTree_01.dae|V01_Sumauma|2.0|0",
-            "Assets/Terceiros/OpenGameArt/Yughues_Palmeiras_v3/palm_straight.FBX|V02_Palmeira_reta|2.5|270",
-            "Assets/Terceiros/OpenGameArt/Yughues_Palmeiras_v3/palm_dual.FBX|V02_Palmeira_dupla|2.6|270",
-            "Assets/Terceiros/OpenGameArt/Yughues_Palmeiras_v3/palm_trio.FBX|V02_Palmeira_trio|2.7|270",
-            "Assets/Terceiros/OpenGameArt/Yughues_Palmeira_v2/palm_tree.FBX|V03_Palmeira_v2|1.3|270",
-            "Assets/Terceiros/OpenGameArt/3TD_Tropical/Embauba/CecropiaTree01.DAE|V04_Embauba|1.9|0",
-            "Assets/Terceiros/OpenGameArt/3TD_Tropical/Bananeira/Banana01.DAE|V05_Bananeira|0.7|0",
-            "Assets/Terceiros/OpenGameArt/3TD_Tropical/Bambu/Bamboo01.DAE|V07_Bambuzal|1.0|0",
-        };
-        string[] arbustos = {
-            "Assets/Terceiros/PolyHaven/fern_02/fern_02_1k.fbx|V11_Samambaia|1.0|0",
-            "Assets/Terceiros/OpenGameArt/Yughues_ArbustosTropicais/01/trop_shrub_01.FBX|V13_Arbusto_tropical_1|0.62|0.7",
-            "Assets/Terceiros/OpenGameArt/Yughues_ArbustosTropicais/03/trop_shrub_03.FBX|V13_Arbusto_tropical_3|1.06|0.9",
-            "Assets/Terceiros/OpenGameArt/Yughues_ArbustosTropicais/05/trop_shrub_05.FBX|V13_Arbusto_tropical_5|0.72|0.7",
-            "Assets/Terceiros/PolyHaven/shrub_03/shrub_03_1k.fbx|V16_Capim_alto|2.0|0",
-            "Assets/Terceiros/PolyHaven/weed_plant_02/weed_plant_02_1k.fbx|V17_Mato_rasteiro|2.5|0",
-        };
-        // espécies pesadas (dezenas de milhares de triângulos) entram uma vez só, em pontos escolhidos
-        Modelo("V06_Monguba", "Assets/Terceiros/PolyHaven/pachira_aquatica_01/pachira_aquatica_01_1k.fbx", new Vector3(46f, 0f, 106.5f), 0f, 1.6f, veg);
-        Modelo("V12_Arbusto_folha_larga", "Assets/Terceiros/PolyHaven/shrub_04/shrub_04_1k.fbx", new Vector3(-5.5f, 0f, 12f), 0f, 3.2f, veg);
-        Modelo("V14_Anturio", "Assets/Terceiros/PolyHaven/anthurium_botany_01/anthurium_botany_01_1k.fbx", new Vector3(5.2f, 0f, 31.5f), 0f, 1.22f, veg);
-        Modelo("V15_Calathea", "Assets/Terceiros/PolyHaven/calathea_orbifolia_01/calathea_orbifolia_01_1k.fbx", new Vector3(-5.3f, 0f, 48f), 0f, 1.41f, veg);
-        // garante ao menos uma de cada espécie, depois espalha (densidade maior perto da trilha)
-        int ia = 0, ib = 0, placedA = 0, placedB = 0, tent = 0;
-        const int metaArvores = 150, metaArbustos = 90;
-        while ((placedA < metaArvores || placedB < metaArbustos) && tent++ < 20000)
-        {
-            float x = Mathf.Lerp(-30f, 140f, (float)rng.NextDouble());
-            float z = Mathf.Lerp(-22f, 132f, (float)rng.NextDouble());
-            bool arvore = placedA < metaArvores && (placedB >= metaArbustos || rng.NextDouble() < 0.6);
-            float margem = arvore ? 1.6f : 0.0f;
-            float distTrilha = DistanciaTrilha(x, z);
-            if (arvore)
-            {
-                if (distTrilha < margem) continue;            // tronco fora da trilha
-                if (distTrilha > 16f && rng.NextDouble() < 0.7) continue;   // mais denso perto da trilha
-            }
-            else
-            {
-                // arbustos só fora da trilha, numa faixa de até 4 m da borda
-                if (distTrilha < 1.6f || distTrilha > 5f) continue;   // folhagem de até ~1,2 m de raio não invade a trilha
-            }
-            var def = (arvore ? arvores[ia % arvores.Length] : arbustos[ib % arbustos.Length]).Split('|');
-            if (arvore) ia++; else ib++;
-            float esc = float.Parse(def[2], System.Globalization.CultureInfo.InvariantCulture) * (0.85f + (float)rng.NextDouble() * 0.35f);
-            float rx = arvore ? float.Parse(def[3], System.Globalization.CultureInfo.InvariantCulture) : 0f;
-            float y = arvore ? 0f : float.Parse(def[3], System.Globalization.CultureInfo.InvariantCulture);
-            int idx = arvore ? placedA : placedB;
-            var go = Modelo(def[1] + (idx == 0 ? "" : "_" + (idx + 1)), def[0], new Vector3(x, y, z), (float)rng.NextDouble() * 360f, esc, veg);
-            if (rx != 0f) go.transform.rotation = Quaternion.Euler(rx, (float)rng.NextDouble() * 360f, 0f);
-            if (arvore) placedA++; else placedB++;
-        }
     }
 
     // Move o objeto na vertical para a base dos renderers ficar "afundar" metros abaixo do chão da mata (y = -0,05).
@@ -540,8 +368,8 @@ public static class ConstrutorNivel1
         RenderSettings.ambientLight = new Color(0.33f, 0.38f, 0.5f);
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.Linear;
-        RenderSettings.fogStartDistance = 25f;
-        RenderSettings.fogEndDistance = 85f;
+        RenderSettings.fogStartDistance = 16f;
+        RenderSettings.fogEndDistance = 72f;
         RenderSettings.fogColor = new Color(0.08f, 0.13f, 0.2f);
         RenderSettings.skybox = null;
         var cam = Camera.main;
@@ -606,6 +434,18 @@ public static class ConstrutorNivel1
         }
         var gm = GameObject.Find("GameManager").GetComponent<GameManager>();
         gm.heartIcons = icons;
+
+        var velhoC = canvas.transform.Find("HUD_Coletaveis");
+        if (velhoC != null) Object.DestroyImmediate(velhoC.gameObject);
+        var modelo = canvas.transform.Find("HUD_Estacao");
+        if (modelo != null)
+        {
+            var copia = Object.Instantiate(modelo.gameObject, canvas.transform);
+            copia.name = "HUD_Coletaveis";
+            copia.GetComponent<RectTransform>().anchoredPosition = modelo.GetComponent<RectTransform>().anchoredPosition + new Vector2(0f, -42f);
+            gm.coletaveisText = copia.GetComponent<Text>();
+            gm.coletaveisText.text = "";
+        }
     }
 
     // ----------------------------------------------------------------------------------------
@@ -614,14 +454,7 @@ public static class ConstrutorNivel1
         matChao = Mat("Chao_Floresta"); matMadeira = Mat("Madeira"); matTronco = Mat("Tronco"); matGalho = Mat("Galho"); matMarco = Mat("Marco");
         matPerigo = Mat("Perigo"); matTerminal = Mat("Terminal"); matLedVerde = Mat("LedVerde"); matLedVermelho = Mat("LedVermelho"); matRocha = Mat("Rocha");
         matEstaca = Mat("Estaca"); matFosso = Mat("Fosso"); matLenco = Mat("Lenco"); matCaixote = Mat("Caixote"); matFolhagem = Mat("Folhagem");
-        matMata = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Chao_Mata.mat");
-        if (matMata == null)
-        {
-            matMata = new Material(matChao);
-            matMata.color = new Color(0.55f, 0.7f, 0.5f);
-            matMata.mainTextureScale = matChao.mainTextureScale * 2f;
-            AssetDatabase.CreateAsset(matMata, "Assets/Materials/Chao_Mata.mat");
-        }
+        matMata = MaterialMata();
     }
 
     private static Material Mat(string nome)
@@ -824,6 +657,18 @@ public static class ConstrutorNivel1
         {
             // só as peças que ficam apoiadas no chão
             foreach (var c in filhos) c.gameObject.SetActive(c.localPosition.y < 0.05f);
+            return;
+        }
+        if (arquivo.StartsWith("wooden_barrels_01"))
+        {
+            // o kit traz dois barris e peças soltas: fica um barril só
+            string barril = rngVar.Next(2) == 0 ? "barrel01" : "barrel02";
+            foreach (var c in filhos)
+            {
+                bool fica = c.name.Contains(barril);
+                c.gameObject.SetActive(fica);
+                if (fica) c.localPosition = new Vector3(0f, c.localPosition.y, 0f);
+            }
             return;
         }
         if (arquivo.StartsWith("pachira_aquatica"))

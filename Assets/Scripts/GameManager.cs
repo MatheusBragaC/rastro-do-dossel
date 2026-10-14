@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -35,6 +36,7 @@ public class GameManager : MonoBehaviour
     public GameObject failPanel;
     public GameObject completePanel;
     public Image[] heartIcons;   // um ícone por coração, da esquerda para a direita
+    public Text coletaveisText;  // "Mudas 0/5 · Sinais 0/3"
 
     public State CurrentState { get; private set; }
     public int StationsDone { get; private set; }
@@ -43,6 +45,9 @@ public class GameManager : MonoBehaviour
 
     private float messageTimer;
     private float invulnerableUntil;
+    private readonly List<string> tiposColetaveis = new List<string>();
+    private readonly Dictionary<string, int> coletaveisTotal = new Dictionary<string, int>();
+    private readonly Dictionary<string, int> coletaveisFeitos = new Dictionary<string, int>();
 
     /// Finalidade: preparar a fase no carregamento da cena.
     /// Entradas: nenhuma. Retorno: void.
@@ -64,6 +69,7 @@ public class GameManager : MonoBehaviour
         UpdateStationText();
         Hearts = maxHearts;
         UpdateHearts();
+        ContarColetaveis();
         SetCursorLocked(true);
     }
 
@@ -201,6 +207,7 @@ public class GameManager : MonoBehaviour
         player.controlEnabled = false;
         promptText.text = "";
         SetCursorLocked(false);
+        EscreverResumoColetaveis();
         int next = SceneManager.GetActiveScene().buildIndex + 1;
         if (partialDelivery || next >= SceneManager.sceneCountInBuildSettings)
         {
@@ -251,6 +258,54 @@ public class GameManager : MonoBehaviour
     public void ClearPrompt(string text)
     {
         if (promptText.text == text) promptText.text = "";
+    }
+
+    /// Finalidade: registrar uma tarefa opcional concluída (muda resgatada, sinal recolocado).
+    /// Entradas: tipo, nome do contador no HUD; mensagem, fala curta (pode ser vazia). Retorno: void.
+    /// Corpo: soma ao contador do tipo, atualiza o HUD e mostra a mensagem com o progresso.
+    public void ColetavelConcluido(string tipo, string mensagem)
+    {
+        if (!coletaveisFeitos.ContainsKey(tipo)) return;
+        coletaveisFeitos[tipo]++;
+        AtualizarColetaveis();
+        string progresso = tipo + " " + coletaveisFeitos[tipo] + "/" + coletaveisTotal[tipo];
+        ShowMessage(string.IsNullOrEmpty(mensagem) ? progresso : mensagem + " (" + progresso + ")", 3f);
+    }
+
+    /// Finalidade: contar as tarefas opcionais da cena por tipo. Entradas: nenhuma. Retorno: void.
+    /// Corpo: percorre os Coletavel (inclusive inativos), guarda a ordem de aparição e os totais.
+    private void ContarColetaveis()
+    {
+        foreach (var c in FindObjectsByType<Coletavel>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (!coletaveisTotal.ContainsKey(c.tipo)) { coletaveisTotal[c.tipo] = 0; coletaveisFeitos[c.tipo] = 0; tiposColetaveis.Add(c.tipo); }
+            coletaveisTotal[c.tipo]++;
+        }
+        tiposColetaveis.Sort();
+        AtualizarColetaveis();
+    }
+
+    /// Finalidade: escrever "Mudas 1/5   Sinais 0/3" no HUD. Entradas: nenhuma. Retorno: void.
+    private void AtualizarColetaveis()
+    {
+        if (coletaveisText == null) return;
+        var partes = new List<string>();
+        foreach (var t in tiposColetaveis) partes.Add(t + " " + coletaveisFeitos[t] + "/" + coletaveisTotal[t]);
+        coletaveisText.text = string.Join("   ", partes.ToArray());
+    }
+
+    /// Finalidade: acrescentar o resumo das tarefas opcionais na tela de conclusão. Entradas: nenhuma. Retorno: void.
+    /// Corpo: soma uma linha ao subtítulo do painel de conclusão, se houver tarefas na fase.
+    private void EscreverResumoColetaveis()
+    {
+        if (tiposColetaveis.Count == 0 || completePanel == null) return;
+        var sub = completePanel.transform.Find("Subtitulo");
+        if (sub == null) return;
+        var texto = sub.GetComponent<Text>();
+        if (texto == null) return;
+        var partes = new List<string>();
+        foreach (var t in tiposColetaveis) partes.Add(t + ": " + coletaveisFeitos[t] + " de " + coletaveisTotal[t]);
+        texto.text += "\n" + string.Join("  ·  ", partes.ToArray());
     }
 
     /// Finalidade: atualizar o contador "Etapas x/y" (estação e sentinela). Entradas: nenhuma. Retorno: void.
