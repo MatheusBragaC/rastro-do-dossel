@@ -1784,9 +1784,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "W A S D  \u2014  andar (em rela\xE7\xE3o \xE0 c\xE2mera)\nMouse ou \u2190 / \u2192  \u2014  girar a c\xE2mera\nShift esquerdo  \u2014  correr\nEspa\xE7o  \u2014  saltar\nCtrl esquerdo ou C  \u2014  deslizar\nE  \u2014  interagir (esta\xE7\xE3o, bateria da sentinela, terminal)\nR  \u2014  reiniciar a fase\nEsc  \u2014  pausar\n\nVoc\xEA tem 3 cora\xE7\xF5es: fossos, tronco, pil\xE3o e a sentinela tiram um."
-    \u2014  saltar\nCtrl esquerdo ou S  \u2014  deslizar\nE  \u2014  interagir com
-    esta\xE7\xE3o ou terminal\nR  \u2014  reiniciar a fase\nEsc  \u2014  pausar"
+  m_Text: "W A S D  \u2014  andar (em rela\xE7\xE3o \xE0 c\xE2mera)\nMouse ou \u2190 / \u2192  \u2014  girar a c\xE2mera\nShift esquerdo  \u2014  correr\nEspa\xE7o  \u2014  saltar\nCtrl esquerdo ou C  \u2014  deslizar\nE  \u2014  interagir (esta\xE7\xE3o, bateria da sentinela, terminal)\nTab  \u2014  mostrar ou esconder as miss\xF5es\nR  \u2014  reiniciar a fase\nEsc  \u2014  pausar\nE / Espa\xE7o  \u2014  pular cena\n\nVoc\xEA tem 3 cora\xE7\xF5es: fossos, tronco, pil\xE3o e a sentinela tiram um."
 --- !u!222 &1582858250
 CanvasRenderer:
   m_ObjectHideFlags: 0
