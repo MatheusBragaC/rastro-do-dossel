@@ -13,6 +13,9 @@ public abstract class Interactable : MonoBehaviour
     /// Finalidade: dizer se o objeto ainda aceita interação. Retorno: bool.
     protected virtual bool Available { get { return true; } }
 
+    /// Finalidade: deixar outros componentes (como a seta de objetivo) saberem se o objeto ainda aceita interação. Retorno: bool.
+    public bool Disponivel { get { return Available; } }
+
     /// Finalidade: executar a ação do objeto. Retorno: bool indicando se teve efeito.
     public abstract bool Interact();
 

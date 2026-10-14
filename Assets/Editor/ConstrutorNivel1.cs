@@ -129,6 +129,7 @@ public static partial class ConstrutorNivel1
         Coletaveis();
         Lanternas();
         VagaLumes();
+        Marcadores();
 
         // ---------- vegetação espalhada ----------
         registrarOcupacao = false;
@@ -141,6 +142,7 @@ public static partial class ConstrutorNivel1
         ConfigurarAmbiente();
         ConfigurarNilo();
         ConfigurarHud();
+        PainelMissoes();
         PosProcessamento();
 
         EditorSceneManager.MarkSceneDirty(scene);
@@ -437,15 +439,7 @@ public static partial class ConstrutorNivel1
 
         var velhoC = canvas.transform.Find("HUD_Coletaveis");
         if (velhoC != null) Object.DestroyImmediate(velhoC.gameObject);
-        var modelo = canvas.transform.Find("HUD_Estacao");
-        if (modelo != null)
-        {
-            var copia = Object.Instantiate(modelo.gameObject, canvas.transform);
-            copia.name = "HUD_Coletaveis";
-            copia.GetComponent<RectTransform>().anchoredPosition = modelo.GetComponent<RectTransform>().anchoredPosition + new Vector2(0f, -42f);
-            gm.coletaveisText = copia.GetComponent<Text>();
-            gm.coletaveisText.text = "";
-        }
+        gm.coletaveisText = null;   // o contador das tarefas agora fica no painel de missões
     }
 
     // ----------------------------------------------------------------------------------------
@@ -574,7 +568,8 @@ public static partial class ConstrutorNivel1
         go.name = nome;
         go.transform.SetParent(pai);
         go.transform.position = pos;
-        go.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+        // mantém a rotação da raiz do arquivo (muitos FBX vêm com -90° em X para converter Z para cima) e só soma o giro horizontal
+        go.transform.rotation = Quaternion.Euler(0f, yaw, 0f) * asset.transform.localRotation;
         go.transform.localScale = Vector3.one * escala;
         foreach (var c in go.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
         var lod = go.GetComponent<LODGroup>();

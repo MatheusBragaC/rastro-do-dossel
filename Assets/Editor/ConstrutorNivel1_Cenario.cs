@@ -3,6 +3,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.UI;
 
 // Parte do construtor do nível 1 que monta o cenário: os trechos da trilha, o posto, a floresta,
 // as tarefas opcionais, lampiões, vaga-lumes e o pós-processamento.
@@ -32,13 +33,10 @@ public static partial class ConstrutorNivel1
     }
 
     // Instancia um modelo com o tamanho real desejado, apoiado no chão em pos (y = altura da base).
-    // Os modelos exportados com a malha na raiz vêm com o eixo Z para cima (ficam deitados) e em
-    // centímetros: aqui são girados -90° em X e a escala sai do tamanho alvo, não de um número fixo.
+    // Vários arquivos vêm em centímetros: a escala sai do tamanho alvo, não de um número fixo.
     private static GameObject ModeloAlvo(string nome, string path, Vector3 pos, float yaw, float alvo, bool porAltura, Transform pai, bool ocupar = true)
     {
-        var go = Modelo(nome, path, pos, 0f, 1f, pai);
-        bool raizComMalha = go.GetComponent<MeshFilter>() != null;
-        go.transform.rotation = raizComMalha ? Quaternion.Euler(-90f, yaw, 0f) : Quaternion.Euler(0f, yaw, 0f);
+        var go = Modelo(nome, path, pos, yaw, 1f, pai);   // Modelo já preserva a rotação da raiz do arquivo
         var b = Limites(go);
         float referencia = porAltura ? b.size.y : Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z));
         if (referencia > 0.00001f) go.transform.localScale = Vector3.one * (alvo / referencia);
@@ -435,6 +433,94 @@ public static partial class ConstrutorNivel1
             var rend = go.GetComponent<ParticleSystemRenderer>();
             if (mat != null) rend.sharedMaterial = mat;
         }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Setas de objetivo e painel de missões
+
+    private static Material MaterialSeta()
+    {
+        const string tex = "Assets/UI/seta.png", path = "Assets/Materials/Seta.mat";
+        var imp = AssetImporter.GetAtPath(tex) as TextureImporter;
+        if (imp != null && (imp.filterMode != FilterMode.Point || imp.mipmapEnabled || !imp.alphaIsTransparency))
+        {
+            imp.textureType = TextureImporterType.Default; imp.filterMode = FilterMode.Point; imp.mipmapEnabled = false;
+            imp.alphaIsTransparency = true; imp.textureCompression = TextureImporterCompression.Uncompressed; imp.wrapMode = TextureWrapMode.Clamp;
+            imp.SaveAndReimport();
+        }
+        var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m == null) { m = new Material(Shader.Find("Universal Render Pipeline/Unlit")); AssetDatabase.CreateAsset(m, path); }
+        m.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>(tex));
+        m.SetColor("_BaseColor", new Color(1.3f, 1.15f, 0.6f));   // um pouco acima de 1: o bloom faz a seta brilhar
+        m.SetFloat("_AlphaClip", 1f); m.SetFloat("_Cutoff", 0.5f); m.EnableKeyword("_ALPHATEST_ON");
+        m.SetFloat("_Cull", 0f);
+        m.renderQueue = (int)RenderQueue.AlphaTest;
+        EditorUtility.SetDirty(m);
+        return m;
+    }
+
+    private static void Marcadores()
+    {
+        var velho = GameObject.Find("Marcadores");
+        if (velho != null) Object.DestroyImmediate(velho);
+        var raiz = new GameObject("Marcadores").transform;
+        var mat = MaterialSeta();
+        var quad = PrimitiveMesh(PrimitiveType.Quad);
+        System.Action<string, Interactable, float, float, float, bool> criar = (nome, alvo, altura, escala, dist, exige) =>
+        {
+            if (alvo == null) { Debug.LogWarning("Marcador sem alvo: " + nome); return; }
+            var go = new GameObject("Marcador_" + nome);
+            go.transform.SetParent(raiz);
+            var m = go.AddComponent<MarcadorObjetivo>();
+            m.alvo = alvo; m.altura = altura; m.distanciaMaxima = dist; m.exigeEtapasConcluidas = exige;
+            var seta = new GameObject("Seta");
+            seta.transform.SetParent(go.transform);
+            seta.transform.position = alvo.transform.position + Vector3.up * altura;
+            seta.transform.localScale = Vector3.one * escala;
+            seta.AddComponent<MeshFilter>().sharedMesh = quad;
+            var mr = seta.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = mat; mr.shadowCastingMode = ShadowCastingMode.Off; mr.receiveShadows = false;
+            m.visual = seta.transform;
+        };
+        // tarefas opcionais: só com o Nilo a até 28 m, para não poluir a tela
+        foreach (var c in Object.FindObjectsByType<Coletavel>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            criar(c.name.Replace("Coletavel_", ""), c, c.tipo == "Sinais" ? 1.3f : 1.6f, 0.55f, 28f, false);
+        // missões principais: sempre visíveis enquanto estiverem disponíveis
+        var estacao = GameObject.Find("Estacao_Viveiro");
+        if (estacao != null) criar("Estacao", estacao.GetComponentInChildren<InteractableStation>(true), 1.9f, 0.85f, 0f, false);
+        criar("Bateria", Object.FindAnyObjectByType<BateriaSentinela>(FindObjectsInactive.Include), 1.5f, 0.8f, 0f, false);
+        criar("Terminal", Object.FindAnyObjectByType<LevelExit>(FindObjectsInactive.Include), 2.4f, 0.85f, 0f, true);
+    }
+
+    private static void PainelMissoes()
+    {
+        var canvas = GameObject.Find("Canvas");
+        var gm = GameObject.Find("GameManager").GetComponent<GameManager>();
+        var velho = canvas.transform.Find("Painel_Missoes");
+        if (velho != null) Object.DestroyImmediate(velho.gameObject);
+        var modelo = canvas.transform.Find("HUD_Estacao").GetComponent<Text>();
+
+        var painel = new GameObject("Painel_Missoes", typeof(RectTransform));
+        painel.transform.SetParent(canvas.transform, false);
+        var rt = painel.GetComponent<RectTransform>();
+        rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f); rt.pivot = new Vector2(1f, 1f);
+        rt.anchoredPosition = new Vector2(-24f, -92f); rt.sizeDelta = new Vector2(450f, 280f);
+        var fundo = painel.AddComponent<Image>();
+        fundo.color = new Color(0.02f, 0.05f, 0.04f, 0.55f);
+        fundo.raycastTarget = false;
+
+        var txt = new GameObject("Texto", typeof(RectTransform));
+        txt.transform.SetParent(painel.transform, false);
+        var trt = txt.GetComponent<RectTransform>();
+        trt.anchorMin = Vector2.zero; trt.anchorMax = Vector2.one; trt.offsetMin = new Vector2(16f, 12f); trt.offsetMax = new Vector2(-14f, -12f);
+        var t = txt.AddComponent<Text>();
+        t.font = modelo.font; t.fontSize = 24; t.lineSpacing = 1.05f; t.supportRichText = true; t.raycastTarget = false;
+        t.alignment = TextAnchor.UpperLeft; t.horizontalOverflow = HorizontalWrapMode.Wrap; t.verticalOverflow = VerticalWrapMode.Overflow;
+        t.color = Color.white;
+        var sombra = txt.AddComponent<Shadow>(); sombra.effectColor = new Color(0f, 0f, 0f, 0.8f); sombra.effectDistance = new Vector2(1.5f, -1.5f);
+        t.text = "<b>MISSÕES</b>";
+        gm.painelMissoes = painel;
+        gm.missoesText = t;
     }
 
     // ---------------------------------------------------------------------------------------------

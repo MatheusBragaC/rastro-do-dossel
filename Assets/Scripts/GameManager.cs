@@ -36,7 +36,14 @@ public class GameManager : MonoBehaviour
     public GameObject failPanel;
     public GameObject completePanel;
     public Image[] heartIcons;   // um ícone por coração, da esquerda para a direita
-    public Text coletaveisText;  // "Mudas 0/5 · Sinais 0/3"
+    public Text coletaveisText;  // opcional: contador solto no HUD (o painel de missões já mostra)
+
+    [Header("Painel de missões (Tab mostra ou esconde)")]
+    public GameObject painelMissoes;
+    public Text missoesText;
+    public string missaoEstacao = "Ativar a estação do viveiro";
+    public string missaoChefe = "Desligar a sentinela da Vigília";
+    public string missaoSaida = "Usar o terminal de saída";
 
     public State CurrentState { get; private set; }
     public int StationsDone { get; private set; }
@@ -48,6 +55,8 @@ public class GameManager : MonoBehaviour
     private readonly List<string> tiposColetaveis = new List<string>();
     private readonly Dictionary<string, int> coletaveisTotal = new Dictionary<string, int>();
     private readonly Dictionary<string, int> coletaveisFeitos = new Dictionary<string, int>();
+    private InteractableStation estacaoPrincipal;
+    private SentinelaChefe chefe;
 
     /// Finalidade: preparar a fase no carregamento da cena.
     /// Entradas: nenhuma. Retorno: void.
@@ -69,6 +78,8 @@ public class GameManager : MonoBehaviour
         UpdateStationText();
         Hearts = maxHearts;
         UpdateHearts();
+        estacaoPrincipal = FindAnyObjectByType<InteractableStation>();
+        chefe = FindAnyObjectByType<SentinelaChefe>();
         ContarColetaveis();
         SetCursorLocked(true);
     }
@@ -82,6 +93,7 @@ public class GameManager : MonoBehaviour
         var kb = Keyboard.current;
         if (kb != null)
         {
+            if (kb.tabKey.wasPressedThisFrame && painelMissoes != null) painelMissoes.SetActive(!painelMissoes.activeSelf);
             if (kb.rKey.wasPressedThisFrame) RestartLevel();
             else if (kb.escapeKey.wasPressedThisFrame) SetPaused(CurrentState == State.Playing);
         }
@@ -208,6 +220,7 @@ public class GameManager : MonoBehaviour
         promptText.text = "";
         SetCursorLocked(false);
         EscreverResumoColetaveis();
+        AtualizarMissoes();
         int next = SceneManager.GetActiveScene().buildIndex + 1;
         if (partialDelivery || next >= SceneManager.sceneCountInBuildSettings)
         {
@@ -226,6 +239,7 @@ public class GameManager : MonoBehaviour
         StationsDone++;
         UpdateStationText();
         SetObjective(nextObjective);
+        AtualizarMissoes();
     }
 
     /// Finalidade: trocar o objetivo exibido. Entrada: text. Retorno: void.
@@ -288,10 +302,49 @@ public class GameManager : MonoBehaviour
     /// Finalidade: escrever "Mudas 1/5   Sinais 0/3" no HUD. Entradas: nenhuma. Retorno: void.
     private void AtualizarColetaveis()
     {
+        AtualizarMissoes();
         if (coletaveisText == null) return;
         var partes = new List<string>();
         foreach (var t in tiposColetaveis) partes.Add(t + " " + coletaveisFeitos[t] + "/" + coletaveisTotal[t]);
         coletaveisText.text = string.Join("   ", partes.ToArray());
+    }
+
+    /// Finalidade: escrever o painel lateral de missões. Entradas: nenhuma. Retorno: void.
+    /// Corpo: lista as três missões principais (estação, sentinela, terminal) com [x] nas concluídas,
+    /// a primeira pendente em amarelo e as seguintes em cinza; depois as tarefas opcionais com contador.
+    private void AtualizarMissoes()
+    {
+        if (missoesText == null) return;
+        bool estacaoOk = estacaoPrincipal != null ? estacaoPrincipal.Completed : StationsDone >= 1;
+        bool chefeOk = chefe != null ? chefe.EstadoAtual == SentinelaChefe.Estado.Desligada : StationsDone >= stationsTotal;
+        bool saidaOk = CurrentState == State.Completed;
+        var sb = new System.Text.StringBuilder("<b>MISSÕES</b>\n");
+        bool atualMarcada = false;
+        LinhaMissao(sb, missaoEstacao, estacaoOk, ref atualMarcada);
+        LinhaMissao(sb, missaoChefe, chefeOk, ref atualMarcada);
+        LinhaMissao(sb, missaoSaida, saidaOk, ref atualMarcada);
+        if (tiposColetaveis.Count > 0)
+        {
+            sb.Append("\n<b>OPCIONAIS</b>\n");
+            foreach (var t in tiposColetaveis)
+            {
+                bool completo = coletaveisFeitos[t] >= coletaveisTotal[t];
+                string nome = t == "Mudas" ? "Resgatar mudas" : (t == "Sinais" ? "Recolocar sinais" : t);
+                sb.Append(completo ? "<color=#8BE38B>[x] " : "<color=#E8E8E8>[  ] ").Append(nome).Append("  ")
+                  .Append(coletaveisFeitos[t]).Append('/').Append(coletaveisTotal[t]).Append("</color>\n");
+            }
+        }
+        sb.Append("<size=18><color=#9AA0A6>Seta amarela: use E  ·  Tab esconde</color></size>");
+        missoesText.text = sb.ToString();
+    }
+
+    /// Finalidade: uma linha do painel de missões. Entradas: texto, se está feita e se a missão atual
+    /// já foi marcada. Retorno: void. Corpo: verde se feita; amarela se é a primeira pendente; cinza depois.
+    private static void LinhaMissao(System.Text.StringBuilder sb, string texto, bool feita, ref bool atualMarcada)
+    {
+        if (feita) sb.Append("<color=#8BE38B>[x] ").Append(texto).Append("</color>\n");
+        else if (!atualMarcada) { sb.Append("<color=#FFD54A>[  ] ").Append(texto).Append("</color>\n"); atualMarcada = true; }
+        else sb.Append("<color=#9AA0A6>[  ] ").Append(texto).Append("</color>\n");
     }
 
     /// Finalidade: acrescentar o resumo das tarefas opcionais na tela de conclusão. Entradas: nenhuma. Retorno: void.
