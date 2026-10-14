@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Events;
 using UnityEditor.SceneManagement;
@@ -36,12 +37,14 @@ public static class ConstrutorNivel1
 
     private static Material matChao, matMata, matMadeira, matTronco, matGalho, matMarco, matPerigo, matTerminal, matLedVerde, matLedVermelho, matRocha, matEstaca, matFosso, matLenco, matCaixote, matFolhagem;
     private static System.Random rng;
+    private static System.Random rngVar;   // escolha de variação dos kits, separada para não mudar o espalhamento
 
     [MenuItem("Rastro do Dossel/Montar Nível 1 (3D)")]
     public static void Montar()
     {
         var scene = EditorSceneManager.OpenScene(ScenePath);
         rng = new System.Random(7);
+        rngVar = new System.Random(3);
         CarregarMateriais();
 
         foreach (var nome in new[] { "Terreno", "Perigos", "Tutorial", "Cenario", "Cenario_Assets", "Chefe", "Luzes" })
@@ -106,9 +109,9 @@ public static class ConstrutorNivel1
         Caixa(portaoVigilia.transform, "Portao_Placa", new Vector3(107.7f, 2.2f, 98f), new Vector3(0.05f, 0.6f, 1.6f), matPerigo, "Default", "Untagged");
 
         // ---------- trecho A: Várzea Alta ----------
-        Caixa(cenario, "Portao_VarzeaAlta_Poste", new Vector3(-1.4f, 1.3f, -5f), new Vector3(0.25f, 2.6f, 0.25f), matMadeira);
-        Caixa(cenario, "Portao_VarzeaAlta_Poste", new Vector3(1.4f, 1.3f, -5f), new Vector3(0.25f, 2.6f, 0.25f), matMadeira);
-        Caixa(cenario, "Portao_VarzeaAlta_Viga", new Vector3(0f, 2.6f, -5f), new Vector3(3.1f, 0.25f, 0.3f), matMadeira);
+        Caixa(cenario, "N1-01_Portao_VarzeaAlta_Poste", new Vector3(-1.4f, 1.3f, -5f), new Vector3(0.25f, 2.6f, 0.25f), matMadeira);
+        Caixa(cenario, "N1-01_Portao_VarzeaAlta_Poste", new Vector3(1.4f, 1.3f, -5f), new Vector3(0.25f, 2.6f, 0.25f), matMadeira);
+        Caixa(cenario, "N1-01_Portao_VarzeaAlta_Viga", new Vector3(0f, 2.6f, -5f), new Vector3(3.1f, 0.25f, 0.3f), matMadeira);
         Modelo("C07_Fogueira", "Assets/Terceiros/PolyHaven/stone_fire_pit/stone_fire_pit_1k.fbx", new Vector3(-2.6f, 0.6f, -6.5f), 0f, 82.84f, constr);
         Luz(luzes, "Luz_Fogueira", new Vector3(-2.6f, 1.2f, -6.5f), new Color(1f, 0.55f, 0.2f), 2.6f, 11f);
         Modelo("P02_Caixote_madeira", "Assets/Terceiros/PolyHaven/wooden_crate_02/wooden_crate_02_1k.fbx", new Vector3(2.8f, 0f, -6.8f), 20f, 0.86f, apoio);
@@ -118,7 +121,7 @@ public static class ConstrutorNivel1
         Modelo("R06_Paredao_inicio", "Assets/Terceiros/PolyHaven/rock_face_01/rock_face_01_1k.fbx", new Vector3(0f, 1f, -12f), 0f, 106.68f, rochas);
         Caixa(cenario, "Placa_Controles", new Vector3(3.3f, 1.2f, 1f), new Vector3(0.05f, 0.7f, 1.2f), matMadeira);
         Caixa(cenario, "Placa_Controles_Poste", new Vector3(3.3f, 0.5f, 1f), new Vector3(0.08f, 0.9f, 0.08f), matMadeira);
-        Caixa(cenario, "Marco_Treinamento", new Vector3(0f, 0.8f, 10f), new Vector3(0.15f, 1.5f, 0.15f), matMarco);
+        Caixa(cenario, "N1-02_Marco_Treinamento", new Vector3(0f, 0.8f, 10f), new Vector3(0.15f, 1.5f, 0.15f), matMarco);
         var raiz = Caixa(terreno, "Obstaculo_Raiz", new Vector3(0f, 0.25f, 18f), new Vector3(8f, 0.5f, 0.6f), matTronco, "Ground", "Ground");
         Modelo("V10_Raizes", "Assets/Terceiros/PolyHaven/root_cluster_01/root_cluster_01_1k.fbx", new Vector3(0f, 1.2f, 18f), 90f, 72.77f, veg);
         Modelo("V18_Raiz", "Assets/Terceiros/PolyHaven/single_root/single_root_1k.fbx", new Vector3(-2.5f, 0.1f, 18.2f), 0f, 0.98f, veg);
@@ -135,9 +138,9 @@ public static class ConstrutorNivel1
         Caixa(cenario, "Marca_Antiga_Nilo", new Vector3(-3.6f, 1.7f, 35f), new Vector3(0.05f, 0.3f, 0.3f), matLenco).transform.rotation = Quaternion.Euler(45f, 0f, 0f);
         Modelo("C08_Lampiao_marca", "Assets/Terceiros/PolyHaven/wooden_lantern_01/wooden_lantern_01_1k.fbx", new Vector3(-3.6f, 2.4f, 35.8f), 0f, 0.85f, constr);
         Luz(luzes, "Luz_Marca", new Vector3(-3.3f, 2.3f, 35.8f), new Color(1f, 0.75f, 0.4f), 1.5f, 8f);
-        Placa(cenario, "Fosso_1_Placa", new Vector3(3.4f, 0f, 38f));
+        Placa(cenario, "A05_Placa_perigo_1", new Vector3(3.4f, 0f, 38f));
         Fosso(perigos, armad, 1, Fossos[0], new Vector3(0f, 0f, 36.5f));
-        Modelo("C10_Alambrado_Vigilia", "Assets/Terceiros/PolyHaven/modular_chainlink_fence/modular_chainlink_fence_1k.fbx", new Vector3(5.5f, 0f, 44f), 0f, 0.74f, constr);
+        for (int i = 0; i < 4; i++) Modelo(i == 0 ? "C10_Alambrado_Vigilia" : "C10_Alambrado_Vigilia_" + (i + 1), "Assets/Terceiros/PolyHaven/modular_chainlink_fence/modular_chainlink_fence_1k.fbx", new Vector3(4.6f, 0f, 43f + i * 2f), 90f, 1f, constr);
         Modelo("C09_Bloqueio_Vigilia", "Assets/Terceiros/PolyHaven/concrete_road_barrier_02/concrete_road_barrier_02_1k.fbx", new Vector3(-3.2f, 0f, 47f), 15f, 1.02f, constr);
         Modelo("R02_Pedras_musgo_1", "Assets/Terceiros/PolyHaven/rock_moss_set_01/rock_moss_set_01_1k.fbx", new Vector3(5.5f, 0.3f, 30f), 0f, 0.5f, rochas);
         Modelo("R04_Rocha_erodida", "Assets/Terceiros/PolyHaven/rock_07/rock_07_1k.fbx", new Vector3(-6.5f, 0f, 55f), 0f, 7.65f, rochas);
@@ -155,7 +158,7 @@ public static class ConstrutorNivel1
         Modelo("R05_Rocha_09", "Assets/Terceiros/PolyHaven/rock_09/rock_09_1k.fbx", new Vector3(47f, 0f, 56f), 0f, 27.32f, rochas);
 
         // ---------- trecho D: fosso 2, pilão e bloqueio ----------
-        Placa(cenario, "Fosso_2_Placa", new Vector3(43.4f, 0f, 63.5f));
+        Placa(cenario, "A05_Placa_perigo_2", new Vector3(43.4f, 0f, 63.5f));
         Fosso(perigos, armad, 2, Fossos[1], new Vector3(40f, 0f, 62f));
         Pilao(perigos, cenario, armad, new Vector3(40f, 0f, 76f));
         Galho(perigos, cenario, armad, 3, new Vector3(40f, 0f, 84f), false);
@@ -173,6 +176,7 @@ public static class ConstrutorNivel1
             estacao.transform.position = new Vector3(-34f, 0f, 97.2f);
             var terminal = estacao.transform.Find("Saida_Terminal");
             if (terminal != null) { terminal.SetParent(null); terminal.position = new Vector3(114.5f, 0f, 98f); terminal.rotation = Quaternion.Euler(0f, -90f, 0f); terminal.SetParent(estacao.transform, true); }
+            foreach (Transform t in estacao.transform) if (t.name == "Placa_Viveiro") t.name = "N1-05_Placa_viveiro";
             var est = estacao.GetComponentInChildren<InteractableStation>();
             if (est != null) est.nextObjective = "atravessar o posto de observação da Vigília";
         }
@@ -200,7 +204,13 @@ public static class ConstrutorNivel1
         Modelo("E08_Jardineira", "Assets/Terceiros/PolyHaven/planter_box_01/planter_box_01_1k.fbx", new Vector3(55f, 0.2f, 103.2f), 0f, 98.62f, recup);
         Modelo("E09_Pa", "Assets/Terceiros/PolyHaven/rusted_spade_01/rusted_spade_01_1k.fbx", new Vector3(49f, 0.5f, 103.2f), 0f, 95.8f, recup).transform.rotation = Quaternion.Euler(280f, 0f, 8f);
         Modelo("E10_Aspersor", "Assets/Terceiros/PolyHaven/garden_sprinkler_01/garden_sprinkler_01_1k.fbx", new Vector3(56f, 0.2f, 103.5f), 0f, 111.24f, recup);
-        for (int i = 0; i < 2; i++) Modelo("E01_Muda_viveiro_" + (i + 1), "Assets/Terceiros/PolyHaven/potted_plant_02/potted_plant_02_1k.fbx", new Vector3(49.2f + i * 0.5f, 0f, 101.3f), 47f * i, 1.13f, recup);
+        for (int i = 0; i < 2; i++)
+        {
+            // a terra do vaso tem 54 mil triângulos e fica escondida pelas folhas: só a muda principal (E01) a mantém
+            var muda = Modelo("E01_Muda_viveiro_" + (i + 1), "Assets/Terceiros/PolyHaven/potted_plant_02/potted_plant_02_1k.fbx", new Vector3(49.2f + i * 0.5f, 0f, 101.3f), 47f * i, 1.13f, recup);
+            var terra = muda.transform.Find("potted_plant_02_dirt");
+            if (terra != null) terra.gameObject.SetActive(false);
+        }
         Sinalizador(cenario, new Vector3(58f, 0f, 94f));
         Luz(luzes, "Luz_Posto_1", new Vector3(52f, 2.4f, 99f), new Color(1f, 0.8f, 0.5f), 2.2f, 12f);
         Luz(luzes, "Luz_Posto_2", new Vector3(66f, 2.4f, 99f), new Color(1f, 0.8f, 0.5f), 2.2f, 12f);
@@ -402,8 +412,8 @@ public static class ConstrutorNivel1
             Modelo("C08_Lampiao_arena_" + (i + 1), "Assets/Terceiros/PolyHaven/wooden_lantern_01/wooden_lantern_01_1k.fbx", cantos[i] + Vector3.up * 2.4f, 0f, 0.85f, constr);
             Luz(luzes, "Luz_Arena_" + (i + 1), cantos[i] + Vector3.up * 2.3f, new Color(1f, 0.6f, 0.3f), 2.2f, 13f);
         }
-        for (int i = 0; i < 6; i++)
-            Modelo("C10_Alambrado_arena_" + (i + 1), "Assets/Terceiros/PolyHaven/modular_chainlink_fence/modular_chainlink_fence_1k.fbx", new Vector3(84f + i * 4f, 0f, 112.3f), 0f, 0.74f, constr);
+        for (int i = 0; i < 12; i++)   // painéis de 2 m enfileirados no fundo da arena
+            Modelo("C10_Alambrado_arena_" + (i + 1), "Assets/Terceiros/PolyHaven/modular_chainlink_fence/modular_chainlink_fence_1k.fbx", new Vector3(83f + i * 2f, 0f, 112.3f), 0f, 1f, constr);
         Modelo("V09_Toco_arena", "Assets/Terceiros/PolyHaven/tree_stump_01/tree_stump_01_1k.fbx", new Vector3(84f, 0.3f, 108f), 40f, 37.73f, veg);
         Modelo("V08_Tronco_caido_arena", "Assets/Terceiros/PolyHaven/dead_tree_trunk_02/dead_tree_trunk_02_1k.fbx", new Vector3(96f, 0.3f, 85.5f), 0f, 0.99f, veg);
     }
@@ -672,7 +682,7 @@ public static class ConstrutorNivel1
 
     private static GameObject Placa(Transform cenario, string nome, Vector3 pos)
     {
-        Caixa(cenario, nome + "Poste", pos + Vector3.up * 0.5f, new Vector3(0.06f, 0.9f, 0.06f), matMadeira);
+        Caixa(cenario, nome + "_Poste", pos + Vector3.up * 0.5f, new Vector3(0.06f, 0.9f, 0.06f), matMadeira);
         return Caixa(cenario, nome, pos + Vector3.up * 1.1f, new Vector3(0.5f, 0.5f, 0.05f), matPerigo);
     }
 
@@ -713,20 +723,150 @@ public static class ConstrutorNivel1
         go.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
         go.transform.localScale = Vector3.one * escala;
         foreach (var c in go.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
+        var lod = go.GetComponent<LODGroup>();
+        if (lod != null) Object.DestroyImmediate(lod);
         foreach (var t in go.GetComponentsInChildren<Transform>(true))
         {
             if (t == go.transform) continue;
             string n = t.name.ToLowerInvariant();
-            if ((n.Contains("_lod") && !n.Contains("_lod0")) || n.Contains("collision") || n.Contains("colbox") || n.EndsWith("_64") || n.EndsWith("_80") || n.EndsWith("_128") || n.EndsWith("_256"))
+            if (n.Contains("collision") || n.Contains("colbox") || n.EndsWith("_64") || n.EndsWith("_80") || n.EndsWith("_128") || n.EndsWith("_256"))
                 t.gameObject.SetActive(false);
         }
-        var lod = go.GetComponent<LODGroup>();
-        if (lod != null)
+        SimplificarKit(go, path);
+        EscolherLod(go);
+        if (path.Contains("Yughues_ArbustosTropicais"))
         {
-            var lods = lod.GetLODs();
-            for (int i = 1; i < lods.Length; i++) foreach (var r in lods[i].renderers) if (r != null) r.gameObject.SetActive(false);
-            Object.DestroyImmediate(lod);
+            var mat = MaterialFolhagem(System.IO.Path.GetDirectoryName(path), System.IO.Path.GetFileNameWithoutExtension(path));
+            foreach (var r in go.GetComponentsInChildren<Renderer>(true)) r.sharedMaterial = mat;
         }
         return go;
+    }
+
+    // Os FBX dos arbustos do Yughues não trazem material: cria um URP Lit recortado com a textura da pasta.
+    private static Material MaterialFolhagem(string pasta, string nome)
+    {
+        string path = "Assets/Terceiros/_Materiais/" + nome + ".mat";
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (mat != null) return mat;
+        mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+        var difusa = AssetDatabase.LoadAssetAtPath<Texture2D>(pasta + "/diffuse.png");
+        var normal = AssetDatabase.LoadAssetAtPath<Texture2D>(pasta + "/normal.png");
+        var impN = AssetImporter.GetAtPath(pasta + "/normal.png") as TextureImporter;
+        if (impN != null && impN.textureType != TextureImporterType.NormalMap) { impN.textureType = TextureImporterType.NormalMap; impN.SaveAndReimport(); normal = AssetDatabase.LoadAssetAtPath<Texture2D>(pasta + "/normal.png"); }
+        mat.SetTexture("_BaseMap", difusa);
+        mat.SetColor("_BaseColor", Color.white);
+        if (normal != null) { mat.SetTexture("_BumpMap", normal); mat.EnableKeyword("_NORMALMAP"); }
+        mat.SetFloat("_AlphaClip", 1f); mat.SetFloat("_Cutoff", 0.5f); mat.EnableKeyword("_ALPHATEST_ON");
+        mat.SetFloat("_Cull", 0f); mat.doubleSidedGI = true;
+        mat.SetFloat("_Smoothness", 0.1f);
+        mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
+        AssetDatabase.CreateAsset(mat, path);
+        return mat;
+    }
+
+    // Os pacotes do Poly Haven trazem várias variações ou peças lado a lado no mesmo arquivo.
+    // Cada instância fica com uma variação só (centralizada); kits modulares ficam só com a peça útil.
+    private static readonly Regex Variante = new Regex(@"_([a-z])(_LOD\d+)?$");
+    private static readonly Regex NivelLod = new Regex(@"^(.*)_LOD(\d+)$", RegexOptions.IgnoreCase);
+    private static readonly Regex Resolucao = new Regex(@"^(.*\D)(\d{2,3})$");
+    private const int LimiteTriangulosLod = 22000;   // usa o LOD mais detalhado que fica abaixo disso
+
+    private static void SimplificarKit(GameObject go, string path)
+    {
+        string arquivo = System.IO.Path.GetFileNameWithoutExtension(path);
+        var filhos = new List<Transform>();
+        foreach (Transform c in go.transform) filhos.Add(c);
+
+        if (arquivo.StartsWith("modular_electricity_poles"))
+        {
+            // poste pronto "preset_01", deslocado para a origem
+            foreach (var c in filhos)
+            {
+                bool fica = c.name.StartsWith("preset_01_");
+                c.gameObject.SetActive(fica);
+                if (fica) c.localPosition -= new Vector3(2.5f, 0f, 0f);
+            }
+            return;
+        }
+        if (arquivo.StartsWith("modular_chainlink_fence"))
+        {
+            // painel duplo (2 m); os painéis são enfileirados pelo construtor
+            foreach (var c in filhos)
+            {
+                bool fica = c.name == "modular_chainlink_fence_double";
+                c.gameObject.SetActive(fica);
+                if (fica) c.localPosition = new Vector3(0f, c.localPosition.y, 0f);
+            }
+            return;
+        }
+        if (arquivo.StartsWith("modular_electric_cables"))
+        {
+            // só as peças que ficam apoiadas no chão
+            foreach (var c in filhos) c.gameObject.SetActive(c.localPosition.y < 0.05f);
+            return;
+        }
+        if (arquivo.StartsWith("pachira_aquatica"))
+        {
+            string letra = "abcd".Substring(rngVar.Next(4), 1);
+            foreach (var c in filhos)
+            {
+                bool fica = c.name.EndsWith("_" + letra);
+                c.gameObject.SetActive(fica);
+                if (fica) c.localPosition = new Vector3(0f, c.localPosition.y, 0f);
+            }
+            return;
+        }
+        // Modelos Torque (3TD): a mesma peça em várias resoluções (Nome96, Nome128, Nome256...); fica a maior
+        var resolucoes = new Dictionary<string, List<KeyValuePair<int, Transform>>>();
+        foreach (var t in go.GetComponentsInChildren<Transform>(true))
+        {
+            var m = Resolucao.Match(t.name);
+            if (!m.Success) continue;
+            int n = int.Parse(m.Groups[2].Value);
+            if (n < 32) continue;
+            string chave = t.parent.GetInstanceID() + "/" + m.Groups[1].Value;
+            if (!resolucoes.ContainsKey(chave)) resolucoes[chave] = new List<KeyValuePair<int, Transform>>();
+            resolucoes[chave].Add(new KeyValuePair<int, Transform>(n, t));
+        }
+        foreach (var g in resolucoes.Values)
+        {
+            if (g.Count < 2) continue;
+            g.Sort((a, b) => b.Key.CompareTo(a.Key));
+            for (int i = 1; i < g.Count; i++) g[i].Value.gameObject.SetActive(false);
+        }
+
+        var variantes = filhos.FindAll(c => Variante.IsMatch(c.name));
+        if (variantes.Count >= 2 && variantes.Count == filhos.Count)
+        {
+            var escolhida = variantes[rngVar.Next(variantes.Count)];
+            foreach (var c in variantes) c.gameObject.SetActive(c == escolhida);
+            escolhida.localPosition = new Vector3(0f, escolhida.localPosition.y, 0f);
+        }
+    }
+
+    // Para cada grupo nome_LOD0..n, liga o nível mais detalhado com até LimiteTriangulosLod triângulos.
+    private static void EscolherLod(GameObject go)
+    {
+        var grupos = new Dictionary<string, List<KeyValuePair<int, Transform>>>();
+        foreach (var t in go.GetComponentsInChildren<Transform>(true))
+        {
+            var m = NivelLod.Match(t.name);
+            if (!m.Success) continue;
+            string chave = (t.parent != null ? t.parent.GetInstanceID().ToString() : "") + "/" + m.Groups[1].Value;
+            if (!grupos.ContainsKey(chave)) grupos[chave] = new List<KeyValuePair<int, Transform>>();
+            grupos[chave].Add(new KeyValuePair<int, Transform>(int.Parse(m.Groups[2].Value), t));
+        }
+        foreach (var g in grupos.Values)
+        {
+            g.Sort((a, b) => a.Key.CompareTo(b.Key));
+            if (!g[0].Value.gameObject.activeSelf) { foreach (var kv in g) kv.Value.gameObject.SetActive(false); continue; }   // variação descartada
+            int escolhido = g.Count - 1;
+            for (int i = 0; i < g.Count; i++)
+            {
+                var mf = g[i].Value.GetComponent<MeshFilter>();
+                if (mf != null && mf.sharedMesh != null && mf.sharedMesh.triangles.Length / 3 <= LimiteTriangulosLod) { escolhido = i; break; }
+            }
+            for (int i = 0; i < g.Count; i++) g[i].Value.gameObject.SetActive(i == escolhido);
+        }
     }
 }
