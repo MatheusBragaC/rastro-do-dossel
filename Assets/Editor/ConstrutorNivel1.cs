@@ -123,14 +123,14 @@ public static class ConstrutorNivel1
         Caixa(cenario, "Placa_Controles_Poste", new Vector3(3.3f, 0.5f, 1f), new Vector3(0.08f, 0.9f, 0.08f), matMadeira);
         Caixa(cenario, "N1-02_Marco_Treinamento", new Vector3(0f, 0.8f, 10f), new Vector3(0.15f, 1.5f, 0.15f), matMarco);
         var raiz = Caixa(terreno, "Obstaculo_Raiz", new Vector3(0f, 0.25f, 18f), new Vector3(8f, 0.5f, 0.6f), matTronco, "Ground", "Ground");
-        Modelo("V10_Raizes", "Assets/Terceiros/PolyHaven/root_cluster_01/root_cluster_01_1k.fbx", new Vector3(0f, 1.2f, 18f), 90f, 72.77f, veg);
-        Modelo("V18_Raiz", "Assets/Terceiros/PolyHaven/single_root/single_root_1k.fbx", new Vector3(-2.5f, 0.1f, 18.2f), 0f, 0.98f, veg);
-        Modelo("V19_Musgo", "Assets/Terceiros/PolyHaven/moss_01/moss_01_1k.fbx", new Vector3(2.8f, 1.0f, 18f), 0f, 1f, veg);
+        Modelo("V10_Raizes", "Assets/Terceiros/PolyHaven/root_cluster_01/root_cluster_01_1k.fbx", new Vector3(-6.5f, 0f, 17f), 90f, 72.77f, veg);
+        Modelo("V18_Raiz", "Assets/Terceiros/PolyHaven/single_root/single_root_1k.fbx", new Vector3(5.6f, 0f, 19f), 0f, 0.98f, veg);
+        Modelo("V19_Musgo", "Assets/Terceiros/PolyHaven/moss_01/moss_01_1k.fbx", new Vector3(2.5f, 0.5f, 18f), 0f, 6f, veg);   // musgo sobre a raiz atravessada
         Modelo("R01_Pedregulho", "Assets/Terceiros/PolyHaven/boulder_01/boulder_01_1k.fbx", new Vector3(-6.5f, 0.1f, 6f), 0f, 1.59f, rochas);
-        Modelo("R09_Cascalho", "Assets/Terceiros/PolyHaven/stone_01/stone_01_1k.fbx", new Vector3(3.2f, 0.1f, 24f), 0f, 4.87f, rochas);
+        Modelo("R09_Cascalho", "Assets/Terceiros/PolyHaven/stone_01/stone_01_1k.fbx", new Vector3(6f, 0f, 24f), 0f, 4.87f, rochas);
         Modelo("V08_Tronco_caido", "Assets/Terceiros/PolyHaven/dead_tree_trunk_02/dead_tree_trunk_02_1k.fbx", new Vector3(-7f, 0.3f, 26f), 30f, 0.99f, veg);
-        Modelo("V09_Toco", "Assets/Terceiros/PolyHaven/tree_stump_01/tree_stump_01_1k.fbx", new Vector3(3.4f, 0.3f, 13f), 0f, 37.73f, veg);
-        Modelo("V20_Galhos_secos", "Assets/Terceiros/PolyHaven/dry_branches_medium_01/dry_branches_medium_01_1k.fbx", new Vector3(-3.3f, 0f, 28f), 0f, 1.13f, veg);
+        Modelo("V09_Toco", "Assets/Terceiros/PolyHaven/tree_stump_01/tree_stump_01_1k.fbx", new Vector3(5.4f, 0f, 13f), 0f, 37.73f, veg);
+        Modelo("V20_Galhos_secos", "Assets/Terceiros/PolyHaven/dry_branches_medium_01/dry_branches_medium_01_1k.fbx", new Vector3(-5.6f, 0f, 28f), 0f, 1.13f, veg);
         for (int i = 0; i < 6; i++) Modelo(i == 0 ? "C04_Cerca_estacas_1" : "C04_Cerca_estacas_" + (i + 1), "Assets/Terceiros/OpenGameArt/WoodKit1/Stick_1.fbx", new Vector3(-4.3f, 0.6f, -2f + i * 0.6f), i * 23f, 0.56f, constr);
 
         // ---------- trecho B: marca antiga e fosso 1 ----------
@@ -142,7 +142,7 @@ public static class ConstrutorNivel1
         Fosso(perigos, armad, 1, Fossos[0], new Vector3(0f, 0f, 36.5f));
         for (int i = 0; i < 4; i++) Modelo(i == 0 ? "C10_Alambrado_Vigilia" : "C10_Alambrado_Vigilia_" + (i + 1), "Assets/Terceiros/PolyHaven/modular_chainlink_fence/modular_chainlink_fence_1k.fbx", new Vector3(4.6f, 0f, 43f + i * 2f), 90f, 1f, constr);
         Modelo("C09_Bloqueio_Vigilia", "Assets/Terceiros/PolyHaven/concrete_road_barrier_02/concrete_road_barrier_02_1k.fbx", new Vector3(-3.2f, 0f, 47f), 15f, 1.02f, constr);
-        Modelo("R02_Pedras_musgo_1", "Assets/Terceiros/PolyHaven/rock_moss_set_01/rock_moss_set_01_1k.fbx", new Vector3(5.5f, 0.3f, 30f), 0f, 0.5f, rochas);
+        Modelo("R02_Pedras_musgo_1", "Assets/Terceiros/PolyHaven/rock_moss_set_01/rock_moss_set_01_1k.fbx", new Vector3(8.5f, 0f, 30f), 0f, 0.5f, rochas);
         Modelo("R04_Rocha_erodida", "Assets/Terceiros/PolyHaven/rock_07/rock_07_1k.fbx", new Vector3(-6.5f, 0f, 55f), 0f, 7.65f, rochas);
         Modelo("R08_Encosta", "Assets/Terceiros/PolyHaven/mountainside/mountainside_1k.fbx", new Vector3(-34f, 0.1f, 30f), 270f, 1.76f, rochas).transform.localScale = new Vector3(1.76f, 0.52f, 1.33f);
 
@@ -153,7 +153,7 @@ public static class ConstrutorNivel1
         Luz(luzes, "Luz_Galhos", new Vector3(15.5f, 2.2f, 59.8f), new Color(1f, 0.75f, 0.4f), 1.5f, 9f);
         TroncoGiratorio(perigos, armad, new Vector3(32f, 0f, 56f));
         Luz(luzes, "Luz_Tronco", new Vector3(32f, 4.2f, 56f), new Color(1f, 0.6f, 0.3f), 1.8f, 10f);
-        Modelo("R03_Pedras_musgo_2", "Assets/Terceiros/PolyHaven/rock_moss_set_02/rock_moss_set_02_1k.fbx", new Vector3(24f, 0.2f, 61.5f), 0f, 0.48f, rochas);
+        Modelo("R03_Pedras_musgo_2", "Assets/Terceiros/PolyHaven/rock_moss_set_02/rock_moss_set_02_1k.fbx", new Vector3(24f, 0f, 63.5f), 0f, 0.48f, rochas);
         Modelo("R10_Rochas_tropicais", "Assets/Terceiros/OpenGameArt/3TD_Tropical/Rochas/GroupRocks01.DAE", new Vector3(40f, 0.3f, 49f), 0f, 17.44f, rochas);
         Modelo("R05_Rocha_09", "Assets/Terceiros/PolyHaven/rock_09/rock_09_1k.fbx", new Vector3(47f, 0f, 56f), 0f, 27.32f, rochas);
 
@@ -166,6 +166,7 @@ public static class ConstrutorNivel1
         Modelo("T09_Holofote", "Assets/Terceiros/PolyHaven/portable_searchlight/portable_searchlight_1k.fbx", new Vector3(45.2f, 0.2f, 90f), 230f, 138.13f, tec);
         Luz(luzes, "Luz_Holofote_D", new Vector3(44.2f, 1.6f, 89.6f), new Color(0.85f, 0.95f, 1f), 2.2f, 12f);
         Modelo("T02_Sensor_camera", "Assets/Terceiros/PolyHaven/security_camera_01/security_camera_01_1k.fbx", new Vector3(35.6f, 2.6f, 90f), 120f, 1.22f, tec);
+        Caixa(cenario, "Poste_camera_D", new Vector3(35.6f, 1.23f, 90.0f), new Vector3(0.12f, 2.45f, 0.12f), matTerminal);   // suporte da câmera
         Modelo("T07_Postes_energia", "Assets/Terceiros/PolyHaven/modular_electricity_poles/modular_electricity_poles_1k.fbx", new Vector3(30f, 0f, 80f), 90f, 1f, tec);
 
         // ---------- trecho E: posto do viveiro ----------
@@ -240,6 +241,11 @@ public static class ConstrutorNivel1
 
         // ---------- vegetação espalhada ----------
         Vegetacao(veg);
+        // plantas e pedras apoiadas no chão pela base real do modelo (os pivôs variam de pacote para pacote)
+        foreach (Transform t in veg) Assentar(t.gameObject, 0.04f);
+        foreach (Transform t in rochas) if (!t.name.StartsWith("R06") && !t.name.StartsWith("R07") && !t.name.StartsWith("R08")) Assentar(t.gameObject, 0.12f);
+        foreach (Transform t in armad) if (t.name.StartsWith("A02")) Assentar(t.gameObject, 0.03f);
+        Assentar(GameObject.Find("Cenario_Assets/Vegetacao/V19_Musgo"), -0.5f);   // em cima da raiz (topo em 0,5)
 
         // ---------- iluminação, HUD, Nilo, câmera, GameManager ----------
         ConfigurarAmbiente();
@@ -276,8 +282,9 @@ public static class ConstrutorNivel1
     {
         // barra sólida baixa cruzando o corredor: só passa deslizando (altura livre 1,05 m)
         var g = Caixa(perigos, "Galho_" + n, pos + Vector3.up * 1.2f, alongZ ? new Vector3(0.3f, 0.3f, 8f) : new Vector3(8f, 0.3f, 0.3f), matTronco, true);
-        var visual = Modelo("A02_Galho_" + n + "_visual", "Assets/Terceiros/PolyHaven/dead_quiver_branch_02/dead_quiver_branch_02_1k.fbx", pos + Vector3.up * 1.2f, alongZ ? 90f : 0f, 1f, armad);
-        visual.transform.localScale = new Vector3(455.94f, 139.21f, 248.72f);
+        // galho caído na mata, ao lado da barra (o modelo tem 1,3 m e não cobre a barra de 8 m)
+        var lado = alongZ ? pos + new Vector3(0f, 0f, 5.8f) : pos + new Vector3(5.8f, 0f, 0f);
+        Modelo("A02_Galho_" + n + "_visual", "Assets/Terceiros/PolyHaven/dead_quiver_branch_02/dead_quiver_branch_02_1k.fbx", lado, 37f * n, 1.8f, armad);
         for (int k = -1; k <= 1; k += 2)
         {
             var sp = alongZ ? pos + new Vector3(0f, 0.5f, k * 3.8f) : pos + new Vector3(k * 3.8f, 0.5f, 0f);
@@ -405,6 +412,7 @@ public static class ConstrutorNivel1
         Modelo("T09_Holofote_torre", "Assets/Terceiros/PolyHaven/portable_searchlight/portable_searchlight_1k.fbx", new Vector3(105f, 5.3f, 108.6f), 180f, 138.13f, tec);
         Luz(luzes, "Luz_Torre", new Vector3(104.5f, 5.4f, 107.8f), new Color(0.85f, 0.95f, 1f), 3f, 18f);
         Modelo("T02_Sensor_camera_arena", "Assets/Terceiros/PolyHaven/security_camera_01/security_camera_01_1k.fbx", new Vector3(81f, 3.2f, 111f), 150f, 1.22f, tec);
+        Caixa(chefe, "Poste_camera_arena", new Vector3(81.0f, 1.53f, 111.0f), new Vector3(0.12f, 3.05f, 0.12f), matTerminal);   // suporte da câmera
         var cantos = new[] { new Vector3(82f, 0f, 86f), new Vector3(106f, 0f, 86f), new Vector3(82f, 0f, 110f), new Vector3(106f, 0f, 110f) };
         for (int i = 0; i < 4; i++)
         {
@@ -414,8 +422,8 @@ public static class ConstrutorNivel1
         }
         for (int i = 0; i < 12; i++)   // painéis de 2 m enfileirados no fundo da arena
             Modelo("C10_Alambrado_arena_" + (i + 1), "Assets/Terceiros/PolyHaven/modular_chainlink_fence/modular_chainlink_fence_1k.fbx", new Vector3(83f + i * 2f, 0f, 112.3f), 0f, 1f, constr);
-        Modelo("V09_Toco_arena", "Assets/Terceiros/PolyHaven/tree_stump_01/tree_stump_01_1k.fbx", new Vector3(84f, 0.3f, 108f), 40f, 37.73f, veg);
-        Modelo("V08_Tronco_caido_arena", "Assets/Terceiros/PolyHaven/dead_tree_trunk_02/dead_tree_trunk_02_1k.fbx", new Vector3(96f, 0.3f, 85.5f), 0f, 0.99f, veg);
+        Modelo("V09_Toco_arena", "Assets/Terceiros/PolyHaven/tree_stump_01/tree_stump_01_1k.fbx", new Vector3(83f, 0f, 114.5f), 40f, 37.73f, veg);
+        Modelo("V08_Tronco_caido_arena", "Assets/Terceiros/PolyHaven/dead_tree_trunk_02/dead_tree_trunk_02_1k.fbx", new Vector3(96f, 0f, 81f), 0f, 0.99f, veg);
     }
 
     private static void Vegetacao(Transform veg)
@@ -441,8 +449,8 @@ public static class ConstrutorNivel1
         // espécies pesadas (dezenas de milhares de triângulos) entram uma vez só, em pontos escolhidos
         Modelo("V06_Monguba", "Assets/Terceiros/PolyHaven/pachira_aquatica_01/pachira_aquatica_01_1k.fbx", new Vector3(46f, 0f, 106.5f), 0f, 1.6f, veg);
         Modelo("V12_Arbusto_folha_larga", "Assets/Terceiros/PolyHaven/shrub_04/shrub_04_1k.fbx", new Vector3(-5.5f, 0f, 12f), 0f, 3.2f, veg);
-        Modelo("V14_Anturio", "Assets/Terceiros/PolyHaven/anthurium_botany_01/anthurium_botany_01_1k.fbx", new Vector3(3.3f, 0f, 30f), 0f, 1.22f, veg);
-        Modelo("V15_Calathea", "Assets/Terceiros/PolyHaven/calathea_orbifolia_01/calathea_orbifolia_01_1k.fbx", new Vector3(-3.3f, 0f, 48f), 0f, 1.41f, veg);
+        Modelo("V14_Anturio", "Assets/Terceiros/PolyHaven/anthurium_botany_01/anthurium_botany_01_1k.fbx", new Vector3(5.2f, 0f, 31.5f), 0f, 1.22f, veg);
+        Modelo("V15_Calathea", "Assets/Terceiros/PolyHaven/calathea_orbifolia_01/calathea_orbifolia_01_1k.fbx", new Vector3(-5.3f, 0f, 48f), 0f, 1.41f, veg);
         // garante ao menos uma de cada espécie, depois espalha (densidade maior perto da trilha)
         int ia = 0, ib = 0, placedA = 0, placedB = 0, tent = 0;
         const int metaArvores = 150, metaArbustos = 90;
@@ -460,9 +468,8 @@ public static class ConstrutorNivel1
             }
             else
             {
-                // arbustos só na faixa das bordas: dentro da trilha até 1 m da parede, ou fora até 4 m
-                if (distTrilha > 4f) continue;
-                if (distTrilha == 0f && DistanciaBorda(x, z) > 1.0f) continue;
+                // arbustos só fora da trilha, numa faixa de até 4 m da borda
+                if (distTrilha < 1.6f || distTrilha > 5f) continue;   // folhagem de até ~1,2 m de raio não invade a trilha
             }
             var def = (arvore ? arvores[ia % arvores.Length] : arbustos[ib % arbustos.Length]).Split('|');
             if (arvore) ia++; else ib++;
@@ -474,6 +481,20 @@ public static class ConstrutorNivel1
             if (rx != 0f) go.transform.rotation = Quaternion.Euler(rx, (float)rng.NextDouble() * 360f, 0f);
             if (arvore) placedA++; else placedB++;
         }
+    }
+
+    // Move o objeto na vertical para a base dos renderers ficar "afundar" metros abaixo do chão da mata (y = -0,05).
+    private static void Assentar(GameObject go, float afundar)
+    {
+        if (go == null) return;
+        Bounds? b = null;
+        foreach (var r in go.GetComponentsInChildren<Renderer>(false))
+        {
+            if (b == null) b = r.bounds;
+            else { var bb = b.Value; bb.Encapsulate(r.bounds); b = bb; }
+        }
+        if (b == null) return;
+        go.transform.position += Vector3.up * (-0.05f - afundar - b.Value.min.y);
     }
 
     // distância do ponto à união dos retângulos da trilha (0 se está dentro)
