@@ -18,7 +18,8 @@ public class FollowCamera : MonoBehaviour
     private Vector3 velocity;
 
     /// Finalidade: começar com a orientação atual da câmera. Entradas: nenhuma. Retorno: void.
-    void Start()
+    /// Corpo: usa Awake (e não Start) porque a cutscene de abertura desliga o componente antes do primeiro quadro.
+    void Awake()
     {
         yaw = transform.eulerAngles.y;
     }
@@ -47,15 +48,31 @@ public class FollowCamera : MonoBehaviour
             }
         }
 
+        Vector3 goal; Quaternion rotGoal;
+        CalcularPose(out goal, out rotGoal);
+        Vector3 pivot = target.position + Vector3.up * height;
+        transform.position = Vector3.SmoothDamp(transform.position, goal, ref velocity, smoothTime);
+        transform.rotation = Quaternion.LookRotation(pivot - transform.position, Vector3.up);
+    }
+
+    /// Finalidade: calcular onde a câmera do jogo ficaria agora (usado também pelas cutscenes para voltar suave).
+    /// Entradas: nenhuma. Saídas: pos e rot. Retorno: void.
+    /// Corpo: ponto atrás e acima do Nilo pelo ângulo atual, encurtado se um SphereCast encontrar obstáculo.
+    public void CalcularPose(out Vector3 pos, out Quaternion rot)
+    {
         Vector3 pivot = target.position + Vector3.up * height;
         Vector3 back = Quaternion.Euler(pitch, yaw, 0f) * Vector3.back;
         float dist = distance;
         RaycastHit hit;
         if (Physics.SphereCast(pivot, 0.25f, back, out hit, distance, obstacleMask, QueryTriggerInteraction.Ignore))
             dist = Mathf.Max(hit.distance - 0.1f, 0.6f);
+        pos = pivot + back * dist;
+        rot = Quaternion.LookRotation(pivot - pos, Vector3.up);
+    }
 
-        Vector3 goal = pivot + back * dist;
-        transform.position = Vector3.SmoothDamp(transform.position, goal, ref velocity, smoothTime);
-        transform.rotation = Quaternion.LookRotation(pivot - transform.position, Vector3.up);
+    /// Finalidade: ao voltar de uma cutscene, não herdar a velocidade antiga da suavização. Retorno: void.
+    void OnEnable()
+    {
+        velocity = Vector3.zero;
     }
 }

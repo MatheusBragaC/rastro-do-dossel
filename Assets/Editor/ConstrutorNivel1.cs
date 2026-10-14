@@ -86,13 +86,13 @@ public static partial class ConstrutorNivel1
             Laje(terreno, "Fosso_" + (i + 1) + "_Fundo", centro + Vector3.down * 3.25f, new Vector3(f[2] - f[0], 0.5f, f[3] - f[1]), matFosso);
         }
         // chão da mata em faixas, deixando os dois fossos abertos
-        float[] zc = { -60f, 40.5f, 42.5f, 66f, 68f, 160f };
+        float[] zc = { -60f, 40.5f, 42.5f, 66f, 68f, 260f };
         for (int b = 0; b < 5; b++)
         {
             float z0 = zc[b], z1 = zc[b + 1];
-            if (b == 1) { Faixa(terreno, -60f, z0, -4f, z1); Faixa(terreno, 4f, z0, 160f, z1); }
-            else if (b == 3) { Faixa(terreno, -60f, z0, 36f, z1); Faixa(terreno, 44f, z0, 160f, z1); }
-            else Faixa(terreno, -60f, z0, 160f, z1);
+            if (b == 1) { Faixa(terreno, -60f, z0, -4f, z1); Faixa(terreno, 4f, z0, 260f, z1); }
+            else if (b == 3) { Faixa(terreno, -60f, z0, 36f, z1); Faixa(terreno, 44f, z0, 260f, z1); }
+            else Faixa(terreno, -60f, z0, 260f, z1);
         }
         for (int i = 0; i < Contorno.Length; i++)
         {
@@ -130,6 +130,7 @@ public static partial class ConstrutorNivel1
         Lanternas();
         VagaLumes();
         Marcadores();
+        Cutscenes();
 
         // ---------- vegetação espalhada ----------
         registrarOcupacao = false;

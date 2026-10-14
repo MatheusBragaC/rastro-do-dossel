@@ -8,7 +8,7 @@ using UnityEngine.UI;
 // Existe um por cena de nível; os outros scripts o acessam por GameManager.Instance.
 public class GameManager : MonoBehaviour
 {
-    public enum State { Playing, Paused, Failed, Completed }
+    public enum State { Playing, Paused, Failed, Completed, Cutscene }
 
     public static GameManager Instance { get; private set; }
 
@@ -36,6 +36,7 @@ public class GameManager : MonoBehaviour
     public GameObject failPanel;
     public GameObject completePanel;
     public Image[] heartIcons;   // um ícone por coração, da esquerda para a direita
+    public GameObject[] hudElementos;   // escondidos durante as cutscenes
     public Text coletaveisText;  // opcional: contador solto no HUD (o painel de missões já mostra)
 
     [Header("Painel de missões (Tab mostra ou esconde)")]
@@ -56,6 +57,7 @@ public class GameManager : MonoBehaviour
     private readonly Dictionary<string, int> coletaveisTotal = new Dictionary<string, int>();
     private readonly Dictionary<string, int> coletaveisFeitos = new Dictionary<string, int>();
     private InteractableStation estacaoPrincipal;
+    private bool painelAntesDaCena = true;
     private SentinelaChefe chefe;
 
     /// Finalidade: preparar a fase no carregamento da cena.
@@ -93,7 +95,7 @@ public class GameManager : MonoBehaviour
         var kb = Keyboard.current;
         if (kb != null)
         {
-            if (kb.tabKey.wasPressedThisFrame && painelMissoes != null) painelMissoes.SetActive(!painelMissoes.activeSelf);
+            if (kb.tabKey.wasPressedThisFrame && painelMissoes != null && CurrentState != State.Cutscene) painelMissoes.SetActive(!painelMissoes.activeSelf);
             if (kb.rKey.wasPressedThisFrame) RestartLevel();
             else if (kb.escapeKey.wasPressedThisFrame) SetPaused(CurrentState == State.Playing);
         }
@@ -202,11 +204,39 @@ public class GameManager : MonoBehaviour
 
     /// Finalidade: botão Menu. Entradas: nenhuma. Retorno: void.
     /// Corpo: carrega a cena do menu com o tempo restaurado.
-    public void GoToMenu() { StartLevel(menuSceneIndex); }
+    public void GoToMenu() { Cutscene.LimparHistorico(); StartLevel(menuSceneIndex); }
 
     /// Finalidade: botão Jogar novamente. Entradas: nenhuma. Retorno: void.
     /// Corpo: carrega o primeiro nível.
-    public void PlayFromStart() { StartLevel(firstLevelIndex); }
+    public void PlayFromStart() { Cutscene.LimparHistorico(); StartLevel(firstLevelIndex); }
+
+    /// Finalidade: entrar numa cutscene. Entradas: nenhuma. Retorno: void.
+    /// Corpo: só a partir do jogo em andamento; trava o controle, zera o deslocamento horizontal do Nilo,
+    /// apaga aviso e legenda e esconde o HUD (o painel de missões volta como estava).
+    public void IniciarCutscene()
+    {
+        if (CurrentState != State.Playing) return;
+        CurrentState = State.Cutscene;
+        player.controlEnabled = false;
+        var rb = player.GetComponent<Rigidbody>();
+        rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+        promptText.text = "";
+        messageBox.SetActive(false);
+        messageTimer = 0f;
+        if (hudElementos != null) foreach (var h in hudElementos) if (h != null) h.SetActive(false);
+        if (painelMissoes != null) { painelAntesDaCena = painelMissoes.activeSelf; painelMissoes.SetActive(false); }
+    }
+
+    /// Finalidade: sair da cutscene. Entradas: nenhuma. Retorno: void.
+    /// Corpo: devolve o estado de jogo, o controle e o HUD.
+    public void TerminarCutscene()
+    {
+        if (CurrentState != State.Cutscene) return;
+        CurrentState = State.Playing;
+        player.controlEnabled = true;
+        if (hudElementos != null) foreach (var h in hudElementos) if (h != null) h.SetActive(true);
+        if (painelMissoes != null) painelMissoes.SetActive(painelAntesDaCena);
+    }
 
     /// Finalidade: concluir a fase.
     /// Entradas: nenhuma. Retorno: void.

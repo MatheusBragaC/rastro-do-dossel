@@ -524,6 +524,190 @@ public static partial class ConstrutorNivel1
     }
 
     // ---------------------------------------------------------------------------------------------
+    // Cutscenes: abertura, apresentação da sentinela e final
+
+    private static Cutscene.Tomada K(float px, float py, float pz, float ox, float oy, float oz, float dur)
+    {
+        return new Cutscene.Tomada { posicao = new Vector3(px, py, pz), olharPara = new Vector3(ox, oy, oz), duracao = dur };
+    }
+
+    private static Cutscene.Fala F(float ini, float fim, string texto, bool titulo = false)
+    {
+        return new Cutscene.Fala { inicio = ini, fim = fim, texto = texto, titulo = titulo };
+    }
+
+    // Reserva o caminho da câmera para a floresta não plantar árvores na frente das tomadas.
+    private static void ReservarCaminho(Cutscene.Tomada[] tomadas)
+    {
+        for (int i = 0; i < tomadas.Length; i++)
+        {
+            Vector3 a = tomadas[Mathf.Max(i - 1, 0)].posicao, b = tomadas[i].posicao;
+            int passos = Mathf.Max(1, Mathf.CeilToInt(Vector3.Distance(a, b) / 2.5f));
+            for (int k = 0; k <= passos; k++)
+            {
+                var p = Vector3.Lerp(a, b, k / (float)passos);
+                if (p.y < 13f) ocupados.Add(new Vector4(p.x, p.z, 3.2f, 0f));
+            }
+        }
+    }
+
+    private static void Cutscenes()
+    {
+        foreach (var nome in new[] { "Cutscenes", "Canvas_Cutscene", "Antena_Serra" })
+        {
+            var velho = GameObject.Find(nome);
+            if (velho != null) Object.DestroyImmediate(velho);
+        }
+        var canvasJogo = GameObject.Find("Canvas");
+        var fonte = canvasJogo.transform.Find("HUD_Estacao").GetComponent<Text>().font;
+
+        // interface: faixas pretas, legenda dentro da faixa de baixo e título no centro
+        var cv = new GameObject("Canvas_Cutscene", typeof(RectTransform));
+        var canvas = cv.AddComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 20;
+        var esc = cv.AddComponent<CanvasScaler>(); var escJogo = canvasJogo.GetComponent<CanvasScaler>();
+        esc.uiScaleMode = escJogo.uiScaleMode; esc.referenceResolution = escJogo.referenceResolution; esc.matchWidthOrHeight = escJogo.matchWidthOrHeight;
+        var raizUI = new GameObject("Cena", typeof(RectTransform));
+        raizUI.transform.SetParent(cv.transform, false);
+        var rr = raizUI.GetComponent<RectTransform>(); rr.anchorMin = Vector2.zero; rr.anchorMax = Vector2.one; rr.offsetMin = rr.offsetMax = Vector2.zero;
+        System.Func<string, bool, RectTransform> faixa = (nome, topo) =>
+        {
+            var g = new GameObject(nome, typeof(RectTransform));
+            g.transform.SetParent(raizUI.transform, false);
+            var r = g.GetComponent<RectTransform>();
+            r.anchorMin = new Vector2(0f, topo ? 1f : 0f); r.anchorMax = new Vector2(1f, topo ? 1f : 0f); r.pivot = new Vector2(0.5f, topo ? 1f : 0f);
+            r.sizeDelta = new Vector2(0f, 0f);
+            var img = g.AddComponent<Image>(); img.color = Color.black; img.raycastTarget = false;
+            return r;
+        };
+        var faixaTopo = faixa("Faixa_Topo", true);
+        var faixaBase = faixa("Faixa_Base", false);
+        System.Func<string, Vector2, Vector2, Vector2, Vector2, int, TextAnchor, Text> texto = (nome, aMin, aMax, pos, tam, size, alinh) =>
+        {
+            var g = new GameObject(nome, typeof(RectTransform));
+            g.transform.SetParent(raizUI.transform, false);
+            var r = g.GetComponent<RectTransform>(); r.anchorMin = aMin; r.anchorMax = aMax; r.pivot = new Vector2(0.5f, 0.5f);
+            r.anchoredPosition = pos; r.sizeDelta = tam;
+            var t = g.AddComponent<Text>(); t.font = fonte; t.fontSize = size; t.alignment = alinh; t.supportRichText = true; t.raycastTarget = false;
+            t.horizontalOverflow = HorizontalWrapMode.Wrap; t.verticalOverflow = VerticalWrapMode.Overflow; t.color = Color.white;
+            var sh = g.AddComponent<Shadow>(); sh.effectColor = new Color(0f, 0f, 0f, 0.9f); sh.effectDistance = new Vector2(2f, -2f);
+            return t;
+        };
+        var legenda = texto("Legenda", new Vector2(0.08f, 0f), new Vector2(0.92f, 0f), new Vector2(0f, 64f), new Vector2(0f, 110f), 34, TextAnchor.MiddleCenter);
+        var titulo = texto("Titulo", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 40f), new Vector2(1500f, 260f), 76, TextAnchor.MiddleCenter);
+        titulo.fontStyle = FontStyle.Bold;
+        var dica = texto("Dica_Pular", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-190f, -40f), new Vector2(340f, 40f), 22, TextAnchor.MiddleRight);
+        dica.text = "E / Espaço: pular"; dica.color = new Color(0.75f, 0.75f, 0.75f);
+        raizUI.SetActive(false);
+
+        var raiz = new GameObject("Cutscenes").transform;
+        System.Func<string, Cutscene.Tomada[], Cutscene.Fala[], Cutscene> criar = (id, tomadas, falas) =>
+        {
+            var go = new GameObject("Cutscene_" + id);
+            go.transform.SetParent(raiz);
+            var c = go.AddComponent<Cutscene>();
+            c.id = id; c.tomadas = tomadas; c.falas = falas;
+            c.raizUI = raizUI; c.faixaTopo = faixaTopo; c.faixaBase = faixaBase; c.legenda = legenda; c.titulo = titulo;
+            ReservarCaminho(tomadas);
+            return c;
+        };
+
+        // 1) abertura: do alto da trilha até a comunidade, o rosto do Nilo e o caminho à frente
+        var abertura = criar("Abertura", new[] {
+            K(3.2f, 7.5f, 14f,    0f, 1.0f, -5f,   1.2f),
+            K(3.0f, 2.6f, -1.5f,  -2.5f, 0.8f, -7f, 4.5f),
+            K(0.3f, 1.9f, 0.4f,   0f, 1.55f, -3f,  3.5f),
+            K(0f, 4.6f, -4.2f,    0f, 1.0f, 20f,   3.5f),
+        }, new[] {
+            F(0.3f, 4.4f, "RASTRO DO DOSSEL\n<size=40>Nível 1 — Trilha encoberta</size>", true),
+            F(1.2f, 5.2f, "<color=#9FE0FF>MARA (rádio):</color> A travessia fecha ao amanhecer. Leve o módulo até a antena."),
+            F(5.3f, 8.4f, "<color=#9FE0FF>MARA:</color> Eu acompanho enquanto houver sinal."),
+            F(8.5f, 12.6f, "<color=#FFC46B>NILO:</color> Conheço o começo da trilha. Vou avisando."),
+        });
+        abertura.tocarAoIniciar = true;
+
+        // 2) sentinela: aproximação baixa, volta pelo alto e plano aberto da arena
+        var sentinela = GameObject.Find("Chefe/Sentinela").GetComponent<SentinelaChefe>();
+        var cenaChefe = criar("Sentinela", new[] {
+            K(80.5f, 2.2f, 98f,   100f, 1.4f, 98f,  0.6f),
+            K(93.2f, 1.5f, 101.8f, 100f, 1.6f, 98f, 3.2f),
+            K(97.5f, 6.5f, 107.5f, 100f, 0.8f, 98f, 3.6f),
+            K(86f, 3f, 91f,       100f, 1.2f, 98f,  3.2f),
+        }, new[] {
+            F(0.3f, 3.8f, "<color=#9FE0FF>MARA (rádio):</color> Sinal estranho à frente... é uma sentinela automática da Vigília."),
+            F(3.9f, 7.2f, "<color=#9FE0FF>MARA:</color> Ela avança em linha reta e depois gira o braço. Desvie, ou salte o braço."),
+            F(7.3f, 10.6f, "<color=#9FE0FF>MARA:</color> Quando ela bater e travar, tire as baterias das costas com E."),
+        });
+        UnityEditor.Events.UnityEventTools.AddPersistentListener(cenaChefe.aoComecar, sentinela.Acordar);
+        var entrada = Gatilho(tutorial, "Entrada_Arena", new Vector3(77.5f, 1.5f, 98f), new Vector3(2f, 3f, 12f), "", 0f);
+        UnityEditor.Events.UnityEventTools.AddPersistentListener(entrada.GetComponent<TutorialTrigger>().onEnter, cenaChefe.TocarCena);
+
+        // 3) final: no terminal, olhar para o posto vencido e subir acima das árvores até a antena na serra
+        Antena(new Vector3(150f, 0f, 112f));
+        var cenaFinal = criar("Final", new[] {
+            K(111f, 1.9f, 100.6f, 114.4f, 1.1f, 98f, 0.5f),
+            K(113.2f, 3.4f, 101.6f, 98f, 1.0f, 98f,  3.2f),
+            K(112f, 16f, 99f,     150f, 10f, 112f,   4.0f),
+            K(114f, 21f, 101f,    150f, 16f, 112f,   4.0f),
+        }, new[] {
+            F(0.3f, 3.4f, "<color=#FFC46B>NILO:</color> Posto da Vigília livre. Mara, está me ouvindo?"),
+            F(3.5f, 7.0f, "<color=#9FE0FF>MARA (rádio):</color> Ouvi, Sabiá. O sinal passou pelo posto."),
+            F(7.1f, 11.4f, "<color=#9FE0FF>MARA:</color> A antena está na serra. Siga pela margem do rio antes do amanhecer."),
+            F(8.8f, 11.7f, "FIM DO NÍVEL 1", true),
+        });
+        cenaFinal.neblinaFim = 170f;
+        Object.FindAnyObjectByType<LevelExit>(FindObjectsInactive.Include).cutsceneFinal = cenaFinal;
+
+        // o HUD some durante as cenas
+        var gm = GameObject.Find("GameManager").GetComponent<GameManager>();
+        var lista = new List<GameObject>();
+        foreach (var n in new[] { "HUD_Nivel", "HUD_Objetivo", "HUD_Estacao", "HUD_Vidas", "Aviso_Interacao" })
+        {
+            var h = canvasJogo.transform.Find(n);
+            if (h != null) lista.Add(h.gameObject);
+        }
+        gm.hudElementos = lista.ToArray();
+    }
+
+    // Antena de rádio na serra, vista de longe no final do nível 1 (o destino do jogo).
+    private static void Antena(Vector3 base0)
+    {
+        var raiz = new GameObject("Antena_Serra").transform;
+        const float altura = 26f;
+        Vector3 topo = base0 + Vector3.up * altura;
+        for (int i = 0; i < 4; i++)
+        {
+            var dir = new Vector3(i % 2 == 0 ? -1f : 1f, 0f, i < 2 ? -1f : 1f);
+            Vector3 a = base0 + dir * 2.2f, b = topo + dir * 0.3f;
+            var perna = Caixa(raiz, "Perna_" + (i + 1), (a + b) / 2f, new Vector3(0.22f, Vector3.Distance(a, b), 0.22f), matTerminal);
+            perna.transform.rotation = Quaternion.FromToRotation(Vector3.up, b - a);
+        }
+        for (int k = 1; k <= 4; k++)
+        {
+            float h = altura * k / 5f, lado = Mathf.Lerp(2.2f, 0.3f, h / altura) * 2f;
+            Caixa(raiz, "Anel_" + k + "_A", base0 + new Vector3(0f, h, -lado / 2f), new Vector3(lado, 0.12f, 0.12f), matTerminal);
+            Caixa(raiz, "Anel_" + k + "_B", base0 + new Vector3(0f, h, lado / 2f), new Vector3(lado, 0.12f, 0.12f), matTerminal);
+            Caixa(raiz, "Anel_" + k + "_C", base0 + new Vector3(-lado / 2f, h, 0f), new Vector3(0.12f, 0.12f, lado), matTerminal);
+            Caixa(raiz, "Anel_" + k + "_D", base0 + new Vector3(lado / 2f, h, 0f), new Vector3(0.12f, 0.12f, lado), matTerminal);
+        }
+        Caixa(raiz, "Mastro", topo + Vector3.up * 2f, new Vector3(0.15f, 4f, 0.15f), matTerminal);
+        Cilindro(raiz, "Prato", topo + new Vector3(-0.8f, -2f, 0f), new Vector3(1.6f, 0.08f, 1.6f), Quaternion.Euler(0f, 0f, 70f), matTerminal);
+        var luzTopo = Caixa(raiz, "Luz_Topo", topo + Vector3.up * 4.1f, new Vector3(0.45f, 0.45f, 0.45f), matLedVermelho);
+        Luz(luzes, "Luz_Antena", luzTopo.transform.position, new Color(1f, 0.15f, 0.1f), 2.5f, 30f);
+        // mata em volta da base da antena: a serra também é floresta
+        string[] especies = { TGD + "Sumauma/CiabaTree_01.dae|V01_Sumauma_serra|2.1|0", "Assets/Terceiros/OpenGameArt/Yughues_Palmeiras_v3/palm_straight.FBX|V02_Palmeira_reta_serra|2.5|0",
+                              TGD + "Embauba/CecropiaTree01.DAE|V04_Embauba_serra|2.0|0", "Assets/Terceiros/OpenGameArt/Yughues_Palmeira_v2/palm_tree.FBX|V03_Palmeira_v2_serra|1.3|0" };
+        var r = new System.Random(11);
+        for (int i = 0; i < 34; i++)
+        {
+            float ang = (float)r.NextDouble() * Mathf.PI * 2f, dist = 5f + (float)r.NextDouble() * 24f;
+            var p = base0 + new Vector3(Mathf.Cos(ang) * dist, 0f, Mathf.Sin(ang) * dist);
+            var e = especies[i % especies.Length].Split('|');
+            var go = Modelo(e[1] + "_" + (i + 1), e[0], p, (float)r.NextDouble() * 360f, float.Parse(e[2], System.Globalization.CultureInfo.InvariantCulture) * (0.9f + (float)r.NextDouble() * 0.4f), veg);
+            SemSombra(go);
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
     // Floresta: árvores bem juntas perto da trilha, mais espaçadas ao longe, sub-bosque nas bordas
 
     private class Especie
@@ -661,7 +845,6 @@ public static partial class ConstrutorNivel1
 
     private static void Tutoriais()
     {
-        Gatilho(tutorial, "Fala_Abertura", new Vector3(0f, 1.5f, -2f), new Vector3(8f, 3f, 2f), "MARA (rádio): A travessia fecha ao amanhecer. Leve o módulo até a antena. Eu acompanho enquanto houver sinal.\nNILO: Conheço o começo da trilha. Vou avisando.", 7f);
         Gatilho(tutorial, "Tutorial_Andar", new Vector3(0f, 1.5f, 3f), new Vector3(8f, 3f, 2f), "W A S D para andar; mouse ou ← → giram a câmera.\nShift para correr. Pare junto ao marco amarelo.", 6f);
         Gatilho(tutorial, "Dica_Tarefas", new Vector3(0f, 1.5f, 6f), new Vector3(8f, 3f, 1.5f), "Pelo caminho há mudas abandonadas e sinais derrubados.\nChegue perto e use E para resgatar ou recolocar (opcional).", 7f);
         Gatilho(tutorial, "Tutorial_Salto", new Vector3(0f, 1.5f, 14f), new Vector3(8f, 3f, 2f), "Espaço para saltar a raiz.", 4f);
@@ -672,8 +855,6 @@ public static partial class ConstrutorNivel1
         Gatilho(tutorial, "Tutorial_Tronco", new Vector3(25f, 1.5f, 56f), new Vector3(2f, 3f, 8f), "Tronco giratório: espere ele passar e atravesse.\nEncostar custa um coração.", 5f);
         Gatilho(tutorial, "Tutorial_Pilao", new Vector3(40f, 1.5f, 71f), new Vector3(8f, 3f, 2f), "Pilão: observe o ciclo e passe quando ele subir.", 5f);
         Gatilho(tutorial, "Chegada_Posto", new Vector3(40f, 1.5f, 93.5f), new Vector3(8f, 3f, 2f), "Área segura: posto do viveiro. Use E na caixa de ferramentas.", 5f);
-        var entradaArena = Gatilho(tutorial, "Entrada_Arena", new Vector3(82f, 1.5f, 98f), new Vector3(2f, 3f, 12f), "MARA (rádio): Sinal estranho à frente... é uma sentinela automática da Vigília. Ela avança em linha reta e depois gira o braço: desvie, salte o braço e, quando ela bater e travar, retire as baterias com E.", 9f);
-        var sentinela = GameObject.Find("Chefe/Sentinela").GetComponent<SentinelaChefe>();
-        UnityEditor.Events.UnityEventTools.AddPersistentListener(entradaArena.GetComponent<TutorialTrigger>().onEnter, sentinela.Acordar);
+        // a abertura e a entrada da arena viraram cutscenes (ver Cutscenes)
     }
 }

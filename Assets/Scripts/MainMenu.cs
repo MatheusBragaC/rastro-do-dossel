@@ -17,7 +17,7 @@ public class MainMenu : MonoBehaviour
     }
 
     /// Finalidade: botão Jogar. Entradas: nenhuma. Retorno: void. Corpo: carrega o nível 1.
-    public void Play() { GameManager.StartLevel(firstLevelIndex); }
+    public void Play() { Cutscene.LimparHistorico(); GameManager.StartLevel(firstLevelIndex); }
 
     /// Finalidade: botão Controles. Entradas: nenhuma. Retorno: void. Corpo: mostra o painel de controles.
     public void ShowControls() { ShowPanel(controlsPanel); }

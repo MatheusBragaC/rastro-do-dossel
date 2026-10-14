@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // Música de fundo em loop. Sobrevive à troca de cena (Menu -> nível) sem reiniciar
-// e abaixa o volume enquanto uma fala ou aviso está na tela.
+// e abaixa o volume enquanto uma fala, aviso ou cutscene está na tela.
 [RequireComponent(typeof(AudioSource))]
 public class MusicaDeFundo : MonoBehaviour
 {
@@ -40,7 +40,7 @@ public class MusicaDeFundo : MonoBehaviour
     void Update()
     {
         var gm = GameManager.Instance;
-        bool fala = gm != null && gm.messageBox != null && gm.messageBox.activeInHierarchy;
+        bool fala = gm != null && ((gm.messageBox != null && gm.messageBox.activeInHierarchy) || gm.CurrentState == GameManager.State.Cutscene);
         float alvo = fala ? volumeDuranteFala : volume;
         fonte.volume = Mathf.MoveTowards(fonte.volume, alvo, suavizacao * Time.unscaledDeltaTime);
     }
