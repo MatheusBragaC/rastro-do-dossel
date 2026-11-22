@@ -81,6 +81,56 @@ public static class ConstrutorNilo
         Debug.Log("Nilo reconstruído em blocos.");
     }
 
+    // Monta um boneco em blocos (mesmas malhas do Nilo) com outra textura: Ivo e os guardas da Vigília.
+    // Cria Pose com os pivôs PernaE, PernaD, BracoE e BracoD (animáveis por script) sob "pai" e devolve a Pose.
+    // perfil: "ivo" ou "guarda" (Assets/UI/<perfil>_skin.png); mochila só se pedida.
+    public static Transform MontarBoneco(Transform pai, string perfil, bool comMochila)
+    {
+        CarregarRects();
+        string tex = "Assets/UI/" + perfil + "_skin.png";
+        var imp = AssetImporter.GetAtPath(tex) as TextureImporter;
+        if (imp != null && (imp.filterMode != FilterMode.Point || imp.mipmapEnabled))
+        {
+            imp.textureType = TextureImporterType.Default; imp.filterMode = FilterMode.Point; imp.mipmapEnabled = false;
+            imp.textureCompression = TextureImporterCompression.Uncompressed; imp.maxTextureSize = 128; imp.SaveAndReimport();
+        }
+        string matPath = "Assets/Materials/" + char.ToUpper(perfil[0]) + perfil.Substring(1) + "_Skin.mat";
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+        if (mat == null) { mat = new Material(Shader.Find("Universal Render Pipeline/Lit")); AssetDatabase.CreateAsset(mat, matPath); }
+        mat.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>(tex));
+        mat.SetFloat("_Smoothness", 0.08f);
+        EditorUtility.SetDirty(mat);
+        var anterior = skin;
+        skin = mat;
+
+        var pose = new GameObject("Pose").transform;
+        pose.SetParent(pai, false);
+        System.Func<string, Vector3, Transform> pivo = (n, p) => { var t = new GameObject(n).transform; t.SetParent(pose, false); t.localPosition = p; return t; };
+        var pe = pivo("PernaE", new Vector3(-0.11f, 0.9f, 0f));
+        var pd = pivo("PernaD", new Vector3(0.11f, 0.9f, 0f));
+        var be = pivo("BracoE", new Vector3(-0.34f, 1.48f, 0f));
+        var bd = pivo("BracoD", new Vector3(0.34f, 1.48f, 0f));
+        Bloco(pose, "Cabeca", new Vector3(0f, 1.74f, 0f), new Vector3(0.44f, 0.44f, 0.44f),
+            "cabeca_frente", "cabeca_tras", "cabeca_esquerda", "cabeca_direita", "cabeca_topo", "cabeca_baixo");
+        Bloco(pose, "Chapeu_Aba", new Vector3(0f, 1.965f, 0f), new Vector3(0.64f, 0.03f, 0.64f),
+            "aba_baixo", "aba_baixo", "aba_baixo", "aba_baixo", "aba_topo", "aba_baixo");
+        Bloco(pose, "Chapeu_Copa", new Vector3(0f, 2.06f, 0f), new Vector3(0.42f, 0.17f, 0.42f),
+            "chapeu_lado", "chapeu_lado", "chapeu_lado", "chapeu_lado", "chapeu_topo", "chapeu_lado");
+        Bloco(pose, "Tronco", new Vector3(0f, 1.22f, 0f), new Vector3(0.5f, 0.62f, 0.28f),
+            "tronco_frente", "tronco_tras", "tronco_lado", "tronco_lado", "tronco_topo", "tronco_topo");
+        if (comMochila)
+            Bloco(pose, "Mochila", new Vector3(0f, 1.2f, -0.26f), new Vector3(0.4f, 0.46f, 0.22f),
+                "mochila_lado", "mochila_lado", "mochila_lado", "mochila_lado", "mochila_topo", "mochila_topo");
+        foreach (var perna in new[] { pe, pd })
+            Bloco(perna, "Perna", new Vector3(0f, -0.45f, 0f), new Vector3(0.2f, 0.88f, 0.22f),
+                "perna_lado", "perna_lado", "perna_lado", "perna_lado", "perna_topo", "perna_baixo");
+        foreach (var braco in new[] { be, bd })
+            Bloco(braco, "Braco", new Vector3(0f, -0.25f, 0f), new Vector3(0.18f, 0.62f, 0.18f),
+                "braco_lado", "braco_lado", "braco_lado", "braco_lado", "braco_topo", "braco_baixo");
+        skin = anterior;
+        return pose;
+    }
+
     private static void Mover(Transform pose, string nome, Vector3 pos)
     {
         var t = pose.Find(nome);

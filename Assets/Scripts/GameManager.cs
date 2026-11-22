@@ -16,7 +16,6 @@ public class GameManager : MonoBehaviour
     public string levelName = "Nível 1 — Trilha encoberta";
     public string startObjective = "chegar ao posto e ativar a estação do viveiro";
     public int stationsTotal = 1;
-    public bool partialDelivery = true;   // build do 1º bimestre: a conclusão do nível 1 encerra a demonstração
     public int menuSceneIndex = 0;
     public int firstLevelIndex = 1;
 
@@ -210,6 +209,15 @@ public class GameManager : MonoBehaviour
     /// Corpo: carrega o primeiro nível.
     public void PlayFromStart() { Cutscene.LimparHistorico(); StartLevel(firstLevelIndex); }
 
+    /// Finalidade: botão Próxima fase da tela de conclusão. Entradas: nenhuma. Retorno: void.
+    /// Corpo: carrega a cena seguinte da build; na última fase volta ao menu.
+    public void ProximaFase()
+    {
+        int next = SceneManager.GetActiveScene().buildIndex + 1;
+        if (next < SceneManager.sceneCountInBuildSettings) StartLevel(next);
+        else GoToMenu();
+    }
+
     /// Finalidade: entrar numa cutscene. Entradas: nenhuma. Retorno: void.
     /// Corpo: só a partir do jogo em andamento; trava o controle, zera o deslocamento horizontal do Nilo,
     /// apaga aviso e legenda e esconde o HUD (o painel de missões volta como estava).
@@ -240,8 +248,8 @@ public class GameManager : MonoBehaviour
 
     /// Finalidade: concluir a fase.
     /// Entradas: nenhuma. Retorno: void.
-    /// Corpo: bloqueia chamadas repetidas; na entrega parcial ou sem próxima cena na build,
-    /// mostra a tela de conclusão; caso contrário carrega o nível seguinte.
+    /// Corpo: bloqueia chamadas repetidas, solta o cursor, marca as missões e abre a tela de conclusão,
+    /// com o resumo das tarefas opcionais. O botão da tela leva à próxima fase (ou, na última, ao início).
     public void CompleteLevel()
     {
         if (CurrentState != State.Playing) return;
@@ -251,14 +259,8 @@ public class GameManager : MonoBehaviour
         SetCursorLocked(false);
         EscreverResumoColetaveis();
         AtualizarMissoes();
-        int next = SceneManager.GetActiveScene().buildIndex + 1;
-        if (partialDelivery || next >= SceneManager.sceneCountInBuildSettings)
-        {
-            messageBox.SetActive(false);
-            completePanel.SetActive(true);
-        }
-        else
-            StartLevel(next);
+        messageBox.SetActive(false);
+        completePanel.SetActive(true);
     }
 
     /// Finalidade: registrar uma estação concluída.
@@ -281,9 +283,11 @@ public class GameManager : MonoBehaviour
 
     /// Finalidade: mostrar uma fala ou aviso na caixa de legenda.
     /// Entradas: text, conteúdo; duration, segundos visíveis. Retorno: void.
-    /// Corpo: substitui a mensagem atual e reinicia o tempo de exibição.
+    /// Corpo: substitui a mensagem atual e reinicia o tempo de exibição. Durante uma cutscene não mostra nada
+    /// (a legenda da cena ocupa a faixa de baixo; a fala deve estar na própria cena).
     public void ShowMessage(string text, float duration)
     {
+        if (CurrentState == State.Cutscene) return;
         messageText.text = text;
         messageBox.SetActive(true);
         messageTimer = duration;
@@ -340,18 +344,17 @@ public class GameManager : MonoBehaviour
     }
 
     /// Finalidade: escrever o painel lateral de missões. Entradas: nenhuma. Retorno: void.
-    /// Corpo: lista as três missões principais (estação, sentinela, terminal) com [x] nas concluídas,
+    /// Corpo: lista as missões principais (estação, sentinela se houver, terminal) com [x] nas concluídas,
     /// a primeira pendente em amarelo e as seguintes em cinza; depois as tarefas opcionais com contador.
     private void AtualizarMissoes()
     {
         if (missoesText == null) return;
         bool estacaoOk = estacaoPrincipal != null ? estacaoPrincipal.Completed : StationsDone >= 1;
-        bool chefeOk = chefe != null ? chefe.EstadoAtual == SentinelaChefe.Estado.Desligada : StationsDone >= stationsTotal;
         bool saidaOk = CurrentState == State.Completed;
         var sb = new System.Text.StringBuilder("<b>MISSÕES</b>\n");
         bool atualMarcada = false;
         LinhaMissao(sb, missaoEstacao, estacaoOk, ref atualMarcada);
-        LinhaMissao(sb, missaoChefe, chefeOk, ref atualMarcada);
+        if (chefe != null) LinhaMissao(sb, missaoChefe, chefe.EstadoAtual == SentinelaChefe.Estado.Desligada, ref atualMarcada);
         LinhaMissao(sb, missaoSaida, saidaOk, ref atualMarcada);
         if (tiposColetaveis.Count > 0)
         {
@@ -359,13 +362,26 @@ public class GameManager : MonoBehaviour
             foreach (var t in tiposColetaveis)
             {
                 bool completo = coletaveisFeitos[t] >= coletaveisTotal[t];
-                string nome = t == "Mudas" ? "Resgatar mudas" : (t == "Sinais" ? "Recolocar sinais" : t);
+                string nome = NomeTarefa(t);
                 sb.Append(completo ? "<color=#8BE38B>[x] " : "<color=#E8E8E8>[  ] ").Append(nome).Append("  ")
                   .Append(coletaveisFeitos[t]).Append('/').Append(coletaveisTotal[t]).Append("</color>\n");
             }
         }
         sb.Append("<size=18><color=#9AA0A6>Seta amarela: use E  ·  Tab esconde</color></size>");
         missoesText.text = sb.ToString();
+    }
+
+    /// Finalidade: nome de cada tipo de tarefa opcional no painel. Entrada: tipo. Retorno: string.
+    private static string NomeTarefa(string tipo)
+    {
+        switch (tipo)
+        {
+            case "Mudas": return "Resgatar mudas";
+            case "Sinais": return "Recolocar sinais";
+            case "Resíduos": return "Recolher resíduos";
+            case "Marcas": return "Deixar marcas novas";
+            default: return tipo;
+        }
     }
 
     /// Finalidade: uma linha do painel de missões. Entradas: texto, se está feita e se a missão atual

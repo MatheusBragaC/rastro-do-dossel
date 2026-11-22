@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Events;
@@ -14,8 +15,14 @@ public static partial class ConstrutorNivel1
 {
     private const string ScenePath = "Assets/Scenes/Nivel1_TrilhaEncoberta.unity";
 
-    // Retângulos de chão da trilha: xmin, zmin, xmax, zmax (topo em y = 0).
-    private static readonly float[][] Trilha =
+    // Geometria da fase em construção, definida por cada Montar antes de chamar Chao():
+    // retângulos xmin, zmin, xmax, zmax com topo em y = 0.
+    private static float[][] Trilha;                    // chão da trilha
+    private static float[][] Fossos = new float[0][];   // vãos dentro da área jogável (estacas ou água)
+    private static float[][] Aguas = new float[0][];    // rio e lagoas fora da área jogável (só visual)
+    private static float[] areaMata;                    // limites do chão da mata: xmin, zmin, xmax, zmax
+
+    private static readonly float[][] TrilhaN1 =
     {
         new[] { -4f, -8f, 4f, 40.5f },     // A: Várzea Alta até o fosso 1
         new[] { -4f, 42.5f, 4f, 52f },     // B: pouso do fosso 1 até a curva
@@ -26,14 +33,7 @@ public static partial class ConstrutorNivel1
         new[] { 80f, 84f, 108f, 112f },    // F: arena da sentinela
         new[] { 108f, 94f, 116f, 102f },   // G: saída
     };
-    private static readonly float[][] Fossos = { new[] { -4f, 40.5f, 4f, 42.5f }, new[] { 36f, 66f, 44f, 68f } };
-    // Contorno da trilha (paredes invisíveis), em sequência de pontos x,z.
-    private static readonly float[][] Contorno =
-    {
-        new[] { -4f, -8f }, new[] { 4f, -8f }, new[] { 4f, 52f }, new[] { 44f, 52f }, new[] { 44f, 92f }, new[] { 80f, 92f },
-        new[] { 80f, 84f }, new[] { 108f, 84f }, new[] { 108f, 94f }, new[] { 116f, 94f }, new[] { 116f, 102f }, new[] { 108f, 102f },
-        new[] { 108f, 112f }, new[] { 80f, 112f }, new[] { 80f, 104f }, new[] { 36f, 104f }, new[] { 36f, 60f }, new[] { -4f, 60f },
-    };
+    private static readonly float[][] FossosN1 = { new[] { -4f, 40.5f, 4f, 42.5f }, new[] { 36f, 66f, 44f, 68f } };
 
     private static Material matChao, matMata, matMadeira, matTronco, matGalho, matMarco, matPerigo, matTerminal, matLedVerde, matLedVermelho, matRocha, matEstaca, matFosso, matLenco, matCaixote, matFolhagem;
     private static System.Random rng;
@@ -42,68 +42,10 @@ public static partial class ConstrutorNivel1
     [MenuItem("Rastro do Dossel/Montar Nível 1 (3D)")]
     public static void Montar()
     {
-        var scene = EditorSceneManager.OpenScene(ScenePath);
-        rng = new System.Random(7);
-        rngVar = new System.Random(3);
-        ocupados.Clear(); registrarOcupacao = false;
-        CarregarMateriais();
-
-        foreach (var nome in new[] { "Terreno", "Perigos", "Tutorial", "Cenario", "Cenario_Assets", "Chefe", "Luzes", "Coletaveis", "Volume_Global" })
-        {
-            var velho = GameObject.Find(nome);
-            if (velho != null) Object.DestroyImmediate(velho);
-        }
-
-        terreno = Raiz("Terreno");
-        perigos = Raiz("Perigos");
-        tutorial = Raiz("Tutorial");
-        cenario = Raiz("Cenario");
-        assets = Raiz("Cenario_Assets");
-        chefe = Raiz("Chefe");
-        luzes = Raiz("Luzes");
-        coletaveis = Raiz("Coletaveis");
-        veg = Filho(assets, "Vegetacao").transform;
-        rochas = Filho(assets, "Rochas").transform;
-        constr = Filho(assets, "Construcoes").transform;
-        tec = Filho(assets, "Tecnologia").transform;
-        recup = Filho(assets, "Recuperacao").transform;
-        apoio = Filho(assets, "Apoio").transform;
-        armad = Filho(assets, "Armadilhas").transform;
-        locais = Filho(assets, "Locais_N1").transform;
-
-        // ---------- chão, fossos e paredes ----------
-        for (int i = 0; i < Trilha.Length; i++)
-        {
-            var r = Trilha[i];
-            Laje(terreno, "Trilha_" + "ABCDEFGH"[i], new Vector3((r[0] + r[2]) / 2f, -0.235f, (r[1] + r[3]) / 2f), new Vector3(r[2] - r[0], 0.5f, r[3] - r[1]), matChao);
-        }
-        // Os fossos atravessam o chão da mata: rebaixo de 3 m com fundo próprio.
-        for (int i = 0; i < Fossos.Length; i++)
-        {
-            var f = Fossos[i];
-            var centro = new Vector3((f[0] + f[2]) / 2f, 0f, (f[1] + f[3]) / 2f);
-            // fundo 3 m abaixo; as laterais são o próprio chão da mata (3 m de espessura), recortado em faixas
-            Laje(terreno, "Fosso_" + (i + 1) + "_Fundo", centro + Vector3.down * 3.25f, new Vector3(f[2] - f[0], 0.5f, f[3] - f[1]), matFosso);
-        }
-        // chão da mata em faixas, deixando os dois fossos abertos
-        float[] zc = { -60f, 40.5f, 42.5f, 66f, 68f, 260f };
-        for (int b = 0; b < 5; b++)
-        {
-            float z0 = zc[b], z1 = zc[b + 1];
-            if (b == 1) { Faixa(terreno, -60f, z0, -4f, z1); Faixa(terreno, 4f, z0, 260f, z1); }
-            else if (b == 3) { Faixa(terreno, -60f, z0, 36f, z1); Faixa(terreno, 44f, z0, 260f, z1); }
-            else Faixa(terreno, -60f, z0, 260f, z1);
-        }
-        for (int i = 0; i < Contorno.Length; i++)
-        {
-            var a = Contorno[i]; var b = Contorno[(i + 1) % Contorno.Length];
-            var pa = new Vector3(a[0], 0f, a[1]); var pb = new Vector3(b[0], 0f, b[1]);
-            var meio = (pa + pb) / 2f + Vector3.up * 2.5f;
-            var tam = new Vector3(Mathf.Max(Mathf.Abs(pb.x - pa.x), 0.4f), 5f, Mathf.Max(Mathf.Abs(pb.z - pa.z), 0.4f));
-            var parede = Caixa(terreno, "Parede_Invisivel_" + i, meio, tam, null, "Ignore Raycast", "Untagged");
-            Object.DestroyImmediate(parede.GetComponent<MeshRenderer>());
-            Object.DestroyImmediate(parede.GetComponent<MeshFilter>());
-        }
+        var scene = IniciarCena(ScenePath, "Locais_N1", 7, 3);
+        Trilha = TrilhaN1; Fossos = FossosN1; Aguas = new float[0][];
+        areaMata = new[] { -60f, -60f, 260f, 260f };
+        Chao(false);
         // portão fechado entre a arena e a saída: abre quando a sentinela desliga
         portaoVigilia = Caixa(terreno, "Portao_Vigilia", new Vector3(108f, 1.5f, 98f), new Vector3(0.5f, 3f, 8f), matTerminal, "Ground", "Ground");
         Modelo("C06_Barreira_Vigilia_portao_1", "Assets/Terceiros/PolyHaven/concrete_road_barrier/concrete_road_barrier_1k.fbx", new Vector3(107.6f, 0f, 96f), 90f, 1.04f, portaoVigilia.transform);
@@ -127,32 +69,205 @@ public static partial class ConstrutorNivel1
 
         Tutoriais();
         Coletaveis();
-        Lanternas();
-        VagaLumes();
+        Lanternas(new[] { new Vector2(0f, -8f), new Vector2(0f, 56f), new Vector2(40f, 56f), new Vector2(40f, 92f) }, 4.75f);
+        VagaLumes(new[] {
+            new Vector3(-6.5f, 1.3f, 12f), new Vector3(6.5f, 1.3f, 25f), new Vector3(-6.5f, 1.3f, 39f), new Vector3(6.5f, 1.3f, 49f),
+            new Vector3(10f, 1.3f, 62.5f), new Vector3(27f, 1.3f, 49.5f), new Vector3(38f, 1.3f, 62.5f), new Vector3(48f, 1.3f, 74f),
+            new Vector3(33f, 1.3f, 86f), new Vector3(56f, 1.3f, 105.5f), new Vector3(86f, 1.3f, 115f), new Vector3(0f, 1.3f, -9f) });
         Marcadores();
         Cutscenes();
 
         // ---------- vegetação espalhada ----------
         registrarOcupacao = false;
-        Vegetacao(veg);
-        // plantas e pedras apoiadas no chão pela base real do modelo (os pivôs variam de pacote para pacote)
-        foreach (Transform t in veg) Assentar(t.gameObject, t.name.StartsWith("V19") ? -0.55f : 0.04f);
-        foreach (Transform t in rochas) if (!t.name.StartsWith("R06") && !t.name.StartsWith("R07") && !t.name.StartsWith("R08")) Assentar(t.gameObject, 0.1f);
+        Ocupar(Modelo("V06_Monguba", PH + "pachira_aquatica_01/pachira_aquatica_01_1k.fbx", new Vector3(50.5f, 0f, 109.5f), 0f, 1.7f, veg));
+        Ocupar(Modelo("V12_Arbusto_folha_larga", PH + "shrub_04/shrub_04_1k.fbx", new Vector3(-6.4f, 0f, 14f), 0f, 3.2f, veg));
+        Ocupar(Modelo("V14_Anturio", PH + "anthurium_botany_01/anthurium_botany_01_1k.fbx", new Vector3(5.8f, 0f, 33f), 0f, 1.22f, veg));
+        Ocupar(Modelo("V15_Calathea", PH + "calathea_orbifolia_01/calathea_orbifolia_01_1k.fbx", new Vector3(-5.9f, 0f, 49f), 0f, 1.41f, veg));
+        Vegetacao(veg, new[] { -36f, -32f, 148f, 144f }, 440, 330);
 
         // ---------- iluminação, HUD, Nilo, câmera, GameManager ----------
-        ConfigurarAmbiente();
-        ConfigurarNilo();
+        Finalizar(scene, Ambiente.Noite, new Vector3(0f, 0.05f, -3f), 0f,
+            "Nível 1 — Trilha encoberta", "chegar ao posto e ativar a estação do viveiro", 2,
+            "Ativar a estação do viveiro", "Desligar a sentinela da Vigília", "Usar o terminal de saída",
+            "Nível 1 concluído", "A trilha da infância ficou para trás. Próxima parada: a margem do rio.", false,
+            "Assets/Settings/PerfilPosProcessamento.asset");
+    }
+
+    // Abre a cena da fase, apaga o cenário anterior e cria as raízes da hierarquia.
+    private static UnityEngine.SceneManagement.Scene IniciarCena(string path, string pastaLocais, int semente, int sementeVariacao)
+    {
+        var scene = EditorSceneManager.OpenScene(path);
+        rng = new System.Random(semente);
+        rngVar = new System.Random(sementeVariacao);
+        ocupados.Clear(); registrarOcupacao = false;
+        CarregarMateriais();
+        foreach (var nome in new[] { "Terreno", "Perigos", "Tutorial", "Cenario", "Cenario_Assets", "Chefe", "Luzes", "Coletaveis", "Volume_Global",
+                                     "Cutscenes", "Canvas_Cutscene", "Antena_Serra", "Marcadores", "NPCs" })
+        {
+            var velho = GameObject.Find(nome);
+            if (velho != null) Object.DestroyImmediate(velho);
+        }
+        terreno = Raiz("Terreno");
+        perigos = Raiz("Perigos");
+        tutorial = Raiz("Tutorial");
+        cenario = Raiz("Cenario");
+        assets = Raiz("Cenario_Assets");
+        chefe = Raiz("Chefe");
+        luzes = Raiz("Luzes");
+        coletaveis = Raiz("Coletaveis");
+        veg = Filho(assets, "Vegetacao").transform;
+        rochas = Filho(assets, "Rochas").transform;
+        constr = Filho(assets, "Construcoes").transform;
+        tec = Filho(assets, "Tecnologia").transform;
+        recup = Filho(assets, "Recuperacao").transform;
+        apoio = Filho(assets, "Apoio").transform;
+        armad = Filho(assets, "Armadilhas").transform;
+        locais = Filho(assets, "Locais_" + pastaLocais.Replace("Locais_", "")).transform;
+        return scene;
+    }
+
+    // Chão da trilha, fundo dos fossos (com água, se pedido), chão da mata recortado nos fossos e nas águas,
+    // espelhos d'água e paredes invisíveis no contorno da área jogável.
+    private static void Chao(bool fossosComAgua)
+    {
+        for (int i = 0; i < Trilha.Length; i++)
+        {
+            var r = Trilha[i];
+            Laje(terreno, "Trilha_" + (i < 26 ? ((char)('A' + i)).ToString() : i.ToString()), new Vector3((r[0] + r[2]) / 2f, -0.235f, (r[1] + r[3]) / 2f), new Vector3(r[2] - r[0], 0.5f, r[3] - r[1]), matChao);
+        }
+        // Os fossos atravessam o chão da mata: rebaixo de 3 m com fundo próprio.
+        for (int i = 0; i < Fossos.Length; i++)
+        {
+            var f = Fossos[i];
+            var centro = new Vector3((f[0] + f[2]) / 2f, 0f, (f[1] + f[3]) / 2f);
+            // fundo 3 m abaixo; as laterais são o próprio chão da mata (3 m de espessura), recortado em faixas
+            Laje(terreno, "Fosso_" + (i + 1) + "_Fundo", centro + Vector3.down * 3.25f, new Vector3(f[2] - f[0], 0.5f, f[3] - f[1]), matFosso);
+            if (fossosComAgua) Espelho("Agua_Fosso_" + (i + 1), f);
+        }
+        for (int i = 0; i < Aguas.Length; i++)
+        {
+            var a = Aguas[i];
+            Laje(terreno, "Leito_" + (i + 1), new Vector3((a[0] + a[2]) / 2f, -2.4f, (a[1] + a[3]) / 2f), new Vector3(a[2] - a[0], 0.5f, a[3] - a[1]), matFosso);
+            Espelho("Agua_" + (i + 1), a);
+        }
+        // chão da mata em faixas: grade com as bordas de todos os buracos, juntando células vizinhas
+        var buracos = new List<float[]>(Fossos); buracos.AddRange(Aguas);
+        var xs = new SortedSet<float> { areaMata[0], areaMata[2] };
+        var zs = new SortedSet<float> { areaMata[1], areaMata[3] };
+        foreach (var b in buracos) { xs.Add(b[0]); xs.Add(b[2]); zs.Add(b[1]); zs.Add(b[3]); }
+        var lx = new List<float>(xs); var lz = new List<float>(zs);
+        for (int j = 0; j + 1 < lz.Count; j++)
+        {
+            float z0 = lz[j], z1 = lz[j + 1], inicio = float.NaN;
+            for (int i = 0; i + 1 < lx.Count; i++)
+            {
+                float cx = (lx[i] + lx[i + 1]) / 2f, cz = (z0 + z1) / 2f;
+                bool buraco = false;
+                foreach (var b in buracos) if (cx > b[0] && cx < b[2] && cz > b[1] && cz < b[3]) { buraco = true; break; }
+                if (!buraco && float.IsNaN(inicio)) inicio = lx[i];
+                if (buraco && !float.IsNaN(inicio)) { Faixa(terreno, inicio, z0, lx[i], z1); inicio = float.NaN; }
+            }
+            if (!float.IsNaN(inicio)) Faixa(terreno, inicio, z0, lx[lx.Count - 1], z1);
+        }
+        Paredes();
+    }
+
+    // Paredes invisíveis no contorno da área jogável (trilha + fossos), achado numa grade de 0,5 m:
+    // cada aresta entre uma célula de dentro e uma de fora vira parede; arestas seguidas viram um bloco só.
+    private static void Paredes()
+    {
+        const float c = 0.5f;
+        var area = new List<float[]>(Trilha); area.AddRange(Fossos);
+        float x0 = float.MaxValue, z0 = float.MaxValue, x1 = float.MinValue, z1 = float.MinValue;
+        foreach (var r in area) { x0 = Mathf.Min(x0, r[0]); z0 = Mathf.Min(z0, r[1]); x1 = Mathf.Max(x1, r[2]); z1 = Mathf.Max(z1, r[3]); }
+        x0 -= c; z0 -= c;
+        int nx = Mathf.CeilToInt((x1 - x0) / c) + 2, nz = Mathf.CeilToInt((z1 - z0) / c) + 2;
+        var dentro = new bool[nx, nz];
+        for (int i = 0; i < nx; i++)
+            for (int j = 0; j < nz; j++)
+            {
+                float cx = x0 + (i + 0.5f) * c, cz = z0 + (j + 0.5f) * c;
+                foreach (var r in area) if (cx > r[0] && cx < r[2] && cz > r[1] && cz < r[3]) { dentro[i, j] = true; break; }
+            }
+        System.Func<int, int, bool> d = (i, j) => i >= 0 && j >= 0 && i < nx && j < nz && dentro[i, j];
+        int n = 0;
+        // arestas verticais (x constante)
+        for (int i = 0; i <= nx; i++)
+        {
+            int ini = -1;
+            for (int j = 0; j <= nz; j++)
+            {
+                bool borda = j < nz && d(i - 1, j) != d(i, j);
+                if (borda && ini < 0) ini = j;
+                if (!borda && ini >= 0) { ParedeInvisivel(++n, new Vector3(x0 + i * c, 2.5f, z0 + (ini + j) * c / 2f), new Vector3(0.4f, 5f, (j - ini) * c)); ini = -1; }
+            }
+        }
+        // arestas horizontais (z constante)
+        for (int j = 0; j <= nz; j++)
+        {
+            int ini = -1;
+            for (int i = 0; i <= nx; i++)
+            {
+                bool borda = i < nx && d(i, j - 1) != d(i, j);
+                if (borda && ini < 0) ini = i;
+                if (!borda && ini >= 0) { ParedeInvisivel(++n, new Vector3(x0 + (ini + i) * c / 2f, 2.5f, z0 + j * c), new Vector3((i - ini) * c, 5f, 0.4f)); ini = -1; }
+            }
+        }
+    }
+
+    private static void ParedeInvisivel(int n, Vector3 centro, Vector3 tam)
+    {
+        var parede = new GameObject("Parede_Invisivel_" + n);
+        parede.transform.SetParent(terreno);
+        parede.transform.position = centro;
+        parede.layer = LayerMask.NameToLayer("Ignore Raycast");
+        parede.AddComponent<BoxCollider>().size = tam;
+    }
+
+    // Espelho d'água sem colisor, um pouco abaixo do chão.
+    private static void Espelho(string nome, float[] r)
+    {
+        var g = Caixa(terreno, nome, new Vector3((r[0] + r[2]) / 2f, -0.5f, (r[1] + r[3]) / 2f), new Vector3(r[2] - r[0], 0.04f, r[3] - r[1]), MaterialAgua());
+        g.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+    }
+
+    private static Material MaterialAgua()
+    {
+        const string path = "Assets/Materials/Agua.mat";
+        var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m != null) return m;
+        m = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+        m.SetColor("_BaseColor", new Color(0.09f, 0.22f, 0.27f, 0.88f));
+        m.SetFloat("_Surface", 1f); m.SetFloat("_Blend", 0f);
+        m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha); m.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        m.SetFloat("_ZWrite", 0f); m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        m.SetFloat("_Smoothness", 0.93f); m.SetFloat("_Metallic", 0.1f);
+        AssetDatabase.CreateAsset(m, path);
+        return m;
+    }
+
+    // Etapa final comum: ambiente, Nilo e GameManager, HUD, painel de missões, tela de conclusão,
+    // pós-processamento e gravação da cena.
+    private static void Finalizar(UnityEngine.SceneManagement.Scene scene, Ambiente amb, Vector3 inicio, float yaw,
+        string nomeFase, string objetivo, int etapas, string mEstacao, string mChefe, string mSaida,
+        string tituloConclusao, string textoConclusao, bool ultima, string perfilPos)
+    {
+        foreach (Transform t in veg) Assentar(t.gameObject, t.name.StartsWith("V19") ? -0.55f : 0.04f);
+        foreach (Transform t in rochas) if (!t.name.StartsWith("R06") && !t.name.StartsWith("R07") && !t.name.StartsWith("R08")) Assentar(t.gameObject, 0.1f);
+        ConfigurarAmbiente(amb, inicio, yaw);
+        ConfigurarNilo(inicio, yaw, nomeFase, objetivo, etapas, mEstacao, mChefe, mSaida);
         ConfigurarHud();
         PainelMissoes();
-        PosProcessamento();
-
+        ConfigurarConclusao(tituloConclusao, textoConclusao, ultima);
+        PosProcessamento(perfilPos, amb);
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
-        Debug.Log("Nível 1 (3D) montado e salvo.");
+        Debug.Log(nomeFase + " montado e salvo.");
     }
 
     // ----------------------------------------------------------------------------------------
-    private static void Fosso(Transform perigos, Transform armad, int n, float[] f, Vector3 respawn)
+    private static void Fosso(Transform perigos, Transform armad, int n, float[] f, Vector3 respawn, bool comEstacas = true)
     {
         var centro = new Vector3((f[0] + f[2]) / 2f, 0f, (f[1] + f[3]) / 2f);
         var resp = new GameObject("Fosso_" + n + "_Retorno").transform;
@@ -162,7 +277,7 @@ public static partial class ConstrutorNivel1
         zona.layer = LayerMask.NameToLayer("Hazard"); zona.tag = "Hazard";
         var bc = zona.AddComponent<BoxCollider>(); bc.isTrigger = true; bc.size = new Vector3(f[2] - f[0], 1.6f, f[3] - f[1]);
         var hz = zona.AddComponent<Hazard>(); hz.mode = Hazard.Mode.HitAndRespawn; hz.respawnPoint = resp;
-        for (int i = 0; i < 24; i++)
+        for (int i = 0; i < (comEstacas ? 24 : 0); i++)
         {
             float x = Mathf.Lerp(f[0] + 0.4f, f[2] - 0.4f, (float)rng.NextDouble());
             float z = Mathf.Lerp(f[1] + 0.3f, f[3] - 0.3f, (float)rng.NextDouble());
@@ -172,7 +287,7 @@ public static partial class ConstrutorNivel1
         }
     }
 
-    private static void TroncoGiratorio(Transform perigos, Transform armad, Vector3 pos)
+    private static TroncoGiratorio TroncoGiratorio(Transform perigos, Transform armad, Vector3 pos)
     {
         var raiz = new GameObject("Tronco_Giratorio");
         raiz.transform.SetParent(perigos); raiz.transform.position = pos;
@@ -189,6 +304,7 @@ public static partial class ConstrutorNivel1
         vis.transform.localScale = new Vector3(74.92f, 370.63f, 354.15f);
         vis.transform.rotation = Quaternion.Euler(0f, 0f, 270f);
         vis.transform.SetParent(raiz.transform, true);
+        return tg;
     }
 
     private static void Pilao(Transform perigos, Transform cenario, Transform armad, Vector3 pos)
@@ -226,13 +342,20 @@ public static partial class ConstrutorNivel1
 
     private static void Sentinela(Transform chefe, Transform luzes, Transform tec, Transform constr, Transform veg, GameObject portao)
     {
-        // montada na origem (coordenadas locais = mundo) e levada para a arena no fim
+        CriarSentinela(new Vector3(100f, 0f, 98f), -90f, new Vector3(82.5f, 0f, 86.5f), new Vector3(105.5f, 0f, 109.5f), portao);
+        ArenaN1();
+    }
+
+    // Máquina da sentinela (chefe): corpo, lâmpada, zona de impacto da carga, braço do giro, células e bateria.
+    // Montada na origem (coordenadas locais = mundo) e levada para pos/yaw no fim; arena = limites do movimento.
+    private static SentinelaChefe CriarSentinela(Vector3 pos, float yaw, Vector3 arenaMin, Vector3 arenaMax, GameObject portao)
+    {
         var raiz = new GameObject("Sentinela");
         raiz.transform.SetParent(chefe);
         raiz.AddComponent<Rigidbody>();
         var corpo = raiz.AddComponent<BoxCollider>(); corpo.center = new Vector3(0f, 1f, 0f); corpo.size = new Vector3(2.4f, 2f, 3.4f);
         var boss = raiz.AddComponent<SentinelaChefe>();
-        boss.arenaMin = new Vector3(82.5f, 0f, 86.5f); boss.arenaMax = new Vector3(105.5f, 0f, 109.5f);
+        boss.arenaMin = arenaMin; boss.arenaMax = arenaMax;
 
         Caixa(raiz.transform, "Chassi", new Vector3(0f, 0.9f, 0f), new Vector3(2.4f, 1f, 3.2f), matTerminal, false);
         Caixa(raiz.transform, "Cabine", new Vector3(0f, 1.8f, -0.5f), new Vector3(1.8f, 0.8f, 1.5f), matTerminal, false);
@@ -287,10 +410,14 @@ public static partial class ConstrutorNivel1
         boss.somAviso = Som(raiz, "Assets/Audio/tronco_aviso.wav");
         boss.somBatida = Som(raiz, "Assets/Audio/caixa.wav");
         boss.somDesligar = Som(raiz, "Assets/Audio/estacao_ok.wav");
-        boss.desativarAoDesligar = new[] { portao };
-        raiz.transform.position = new Vector3(100f, 0f, 98f);
-        raiz.transform.rotation = Quaternion.Euler(0f, -90f, 0f);
+        boss.desativarAoDesligar = portao != null ? new[] { portao } : new GameObject[0];
+        raiz.transform.position = pos;
+        raiz.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+        return boss;
+    }
 
+    private static void ArenaN1()
+    {
         // cenário da arena: torre de observação, tochas, cerca e detritos nas bordas
         var torre = new GameObject("Torre_Observacao"); torre.transform.SetParent(chefe); torre.transform.position = new Vector3(105f, 0f, 109.5f);
         for (int k = 0; k < 4; k++) Caixa(torre.transform, "Torre_Pe", new Vector3(105f + (k % 2 == 0 ? -1.2f : 1.2f), 2.5f, 109.5f + (k < 2 ? -1.2f : 1.2f)), new Vector3(0.25f, 5f, 0.25f), matMadeira);
@@ -332,7 +459,7 @@ public static partial class ConstrutorNivel1
     private static float DistanciaTrilha(float x, float z)
     {
         float best = float.MaxValue;
-        foreach (var r in Trilha)
+        foreach (var r in Trilha.Concat(Fossos))
         {
             float dx = Mathf.Max(r[0] - x, 0f, x - r[2]);
             float dz = Mathf.Max(r[1] - z, 0f, z - r[3]);
@@ -341,39 +468,45 @@ public static partial class ConstrutorNivel1
         return best;
     }
 
-    // distância de um ponto interno ao contorno da trilha (aproximada pelas arestas)
-    private static float DistanciaBorda(float x, float z)
+    // Iluminação de cada fase: a noite avança até o amanhecer na antena.
+    private class Ambiente
     {
-        float best = float.MaxValue;
-        for (int i = 0; i < Contorno.Length; i++)
-        {
-            var a = Contorno[i]; var b = Contorno[(i + 1) % Contorno.Length];
-            var p = new Vector2(x, z); var pa = new Vector2(a[0], a[1]); var pb = new Vector2(b[0], b[1]);
-            float t = Mathf.Clamp01(Vector2.Dot(p - pa, pb - pa) / (pb - pa).sqrMagnitude);
-            best = Mathf.Min(best, Vector2.Distance(p, pa + t * (pb - pa)));
-        }
-        return best;
+        public Vector3 solRot; public Color sol, ambiente, nevoa, fundo, filtro; public float solInt, nevoaIni, nevoaFim, exposicao;
+        public static readonly Ambiente Noite = new Ambiente { solRot = new Vector3(38f, 215f, 0f), sol = new Color(0.72f, 0.78f, 1f), solInt = 0.95f,
+            ambiente = new Color(0.33f, 0.38f, 0.5f), nevoa = new Color(0.08f, 0.13f, 0.2f), nevoaIni = 16f, nevoaFim = 72f, fundo = new Color(0.07f, 0.11f, 0.2f),
+            filtro = new Color(0.93f, 1f, 0.96f), exposicao = 0.15f };
+        public static readonly Ambiente NoiteRio = new Ambiente { solRot = new Vector3(32f, 160f, 0f), sol = new Color(0.7f, 0.8f, 1f), solInt = 1.0f,
+            ambiente = new Color(0.31f, 0.38f, 0.5f), nevoa = new Color(0.1f, 0.16f, 0.22f), nevoaIni = 14f, nevoaFim = 70f, fundo = new Color(0.08f, 0.13f, 0.21f),
+            filtro = new Color(0.9f, 0.98f, 1f), exposicao = 0.15f };
+        public static readonly Ambiente Ravina = new Ambiente { solRot = new Vector3(50f, 200f, 0f), sol = new Color(0.66f, 0.7f, 0.95f), solInt = 0.8f,
+            ambiente = new Color(0.27f, 0.29f, 0.4f), nevoa = new Color(0.09f, 0.08f, 0.13f), nevoaIni = 12f, nevoaFim = 60f, fundo = new Color(0.06f, 0.06f, 0.12f),
+            filtro = new Color(1f, 0.94f, 0.96f), exposicao = 0.2f };
+        public static readonly Ambiente Madrugada = new Ambiente { solRot = new Vector3(18f, 95f, 0f), sol = new Color(0.86f, 0.76f, 1f), solInt = 1.0f,
+            ambiente = new Color(0.38f, 0.35f, 0.5f), nevoa = new Color(0.22f, 0.18f, 0.3f), nevoaIni = 18f, nevoaFim = 80f, fundo = new Color(0.25f, 0.2f, 0.38f),
+            filtro = new Color(0.98f, 0.95f, 1f), exposicao = 0.1f };
+        public static readonly Ambiente Amanhecer = new Ambiente { solRot = new Vector3(14f, 70f, 0f), sol = new Color(1f, 0.74f, 0.52f), solInt = 1.5f,
+            ambiente = new Color(0.56f, 0.47f, 0.44f), nevoa = new Color(0.78f, 0.56f, 0.46f), nevoaIni = 22f, nevoaFim = 110f, fundo = new Color(0.96f, 0.66f, 0.5f),
+            filtro = new Color(1f, 0.95f, 0.88f), exposicao = 0.05f };
     }
 
-    private static void ConfigurarAmbiente()
+    private static void ConfigurarAmbiente(Ambiente a, Vector3 inicio, float yaw)
     {
         var sol = GameObject.Find("Directional Light");
         if (sol != null)
         {
             var l = sol.GetComponent<Light>();
-            // fim de tarde azulado: a noite da missão, ainda legível
-            sol.transform.rotation = Quaternion.Euler(38f, 215f, 0f);
-            l.color = new Color(0.72f, 0.78f, 1f);
-            l.intensity = 0.95f;
+            sol.transform.rotation = Quaternion.Euler(a.solRot);
+            l.color = a.sol;
+            l.intensity = a.solInt;
             l.shadows = LightShadows.Soft;
         }
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-        RenderSettings.ambientLight = new Color(0.33f, 0.38f, 0.5f);
+        RenderSettings.ambientLight = a.ambiente;
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.Linear;
-        RenderSettings.fogStartDistance = 16f;
-        RenderSettings.fogEndDistance = 72f;
-        RenderSettings.fogColor = new Color(0.08f, 0.13f, 0.2f);
+        RenderSettings.fogStartDistance = a.nevoaIni;
+        RenderSettings.fogEndDistance = a.nevoaFim;
+        RenderSettings.fogColor = a.nevoa;
         RenderSettings.skybox = null;
         var cam = Camera.main;
         if (cam != null)
@@ -381,31 +514,55 @@ public static partial class ConstrutorNivel1
             cam.orthographic = false;
             cam.fieldOfView = 60f;
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0.07f, 0.11f, 0.2f);
-            cam.farClipPlane = 120f;
+            cam.backgroundColor = a.fundo;
+            cam.farClipPlane = Mathf.Max(120f, a.nevoaFim + 20f);
             var fc = cam.GetComponent<FollowCamera>();
             if (fc != null) { fc.obstacleMask = LayerMask.GetMask("Ground"); fc.distance = 4.8f; fc.height = 1.5f; fc.pitch = 14f; }
-            cam.transform.position = new Vector3(0f, 2.6f, -7.5f);
-            cam.transform.rotation = Quaternion.Euler(14f, 0f, 0f);
+            var rot = Quaternion.Euler(0f, yaw, 0f);
+            cam.transform.position = inicio + rot * new Vector3(0f, 2.6f, -4.5f);
+            cam.transform.rotation = Quaternion.Euler(14f, yaw, 0f);
         }
     }
 
-    private static void ConfigurarNilo()
+    private static void ConfigurarNilo(Vector3 pos, float yaw, string nomeFase, string objetivo, int etapas, string mEstacao, string mChefe, string mSaida)
     {
         var nilo = GameObject.Find("Nilo");
         if (nilo == null) return;
-        nilo.transform.position = new Vector3(0f, 0.05f, -3f);
+        nilo.transform.position = pos;
         var pc = nilo.GetComponent<PlayerController>();
-        if (pc != null && pc.visual != null) pc.visual.rotation = Quaternion.identity;
+        if (pc != null && pc.visual != null) pc.visual.rotation = Quaternion.Euler(0f, yaw, 0f);
         var antiga = nilo.transform.Find("Lanterna");
         if (antiga != null) Object.DestroyImmediate(antiga.gameObject);
         var lanterna = new GameObject("Lanterna");
         lanterna.transform.SetParent(nilo.transform); lanterna.transform.localPosition = new Vector3(0f, 1.4f, 0f);
         var l = lanterna.AddComponent<Light>(); l.type = LightType.Point; l.range = 8f; l.intensity = 2.5f; l.color = new Color(1f, 0.85f, 0.6f);
         var gm = GameObject.Find("GameManager").GetComponent<GameManager>();
-        gm.stationsTotal = 2;
+        gm.levelName = nomeFase;
+        gm.stationsTotal = etapas;
         gm.invulnerableTime = 1.6f;
-        gm.startObjective = "chegar ao posto e ativar a estação do viveiro";
+        gm.startObjective = objetivo;
+        gm.missaoEstacao = mEstacao;
+        gm.missaoChefe = mChefe;
+        gm.missaoSaida = mSaida;
+        EditorUtility.SetDirty(gm);
+    }
+
+    // Tela de conclusão: título, texto e botão principal (próxima fase, ou jogar de novo na última).
+    private static void ConfigurarConclusao(string titulo, string texto, bool ultima)
+    {
+        var gm = GameObject.Find("GameManager").GetComponent<GameManager>();
+        var painel = gm.completePanel.transform;
+        var t = painel.Find("Titulo"); if (t != null) t.GetComponent<Text>().text = titulo;
+        var sub = painel.Find("Subtitulo"); if (sub != null) sub.GetComponent<Text>().text = texto;
+        var botao = painel.Find("Botao_Jogarnovamente");
+        if (botao == null) return;
+        var b = botao.GetComponent<Button>();
+        while (b.onClick.GetPersistentEventCount() > 0) UnityEventTools.RemovePersistentListener(b.onClick, 0);
+        if (ultima) UnityEventTools.AddPersistentListener(b.onClick, gm.PlayFromStart);
+        else UnityEventTools.AddPersistentListener(b.onClick, gm.ProximaFase);
+        var rotulo = botao.GetComponentInChildren<Text>(true);
+        if (rotulo != null) rotulo.text = ultima ? "Jogar novamente" : "Próxima fase";
+        EditorUtility.SetDirty(b);
     }
 
     private static void ConfigurarHud()

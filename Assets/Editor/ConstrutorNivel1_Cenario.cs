@@ -334,31 +334,38 @@ public static partial class ConstrutorNivel1
 
     private static void Coletaveis()
     {
-        var somOk = AssetDatabase.LoadAssetAtPath<AudioClip>(AUD + "estacao_ok.wav");
-        var somSinal = AssetDatabase.LoadAssetAtPath<AudioClip>(AUD + "caixa.wav");
+        Mudas(new[] { new Vector2(-2.4f, 7.5f), new Vector2(2.7f, 27.5f), new Vector2(15.5f, 58.3f), new Vector2(41.8f, 72.5f), new Vector2(47f, 96f) },
+              new Vector3(48.9f, 0f, 101.7f), new Vector3(0.75f, 0f, 0f), "Muda resgatada: vai para o canteiro do viveiro.");
+        Sinais(new[] { new Vector3(2.7f, 0f, 21.8f), new Vector3(24f, 0f, 53.6f), new Vector3(38.7f, 0f, 81.2f) });
+    }
 
-        // mudas: cada uma resgatada reaparece no canteiro do viveiro
-        var mudas = new[] { new Vector2(-2.4f, 7.5f), new Vector2(2.7f, 27.5f), new Vector2(15.5f, 58.3f), new Vector2(41.8f, 72.5f), new Vector2(47f, 96f) };
+    // Mudas abandonadas: cada uma resgatada reaparece no canteiro (canteiro0 + passo * índice).
+    private static void Mudas(Vector2[] mudas, Vector3 canteiro0, Vector3 passo, string mensagem)
+    {
+        var somOk = AssetDatabase.LoadAssetAtPath<AudioClip>(AUD + "estacao_ok.wav");
         for (int i = 0; i < mudas.Length; i++)
         {
             string id = (i + 1).ToString();
             var vaso = ModeloAlvo("Muda_abandonada_" + id, PH + "potted_plant_02/potted_plant_02_1k.fbx", new Vector3(mudas[i].x, 0f, mudas[i].y), 40f * i, 0.8f, true, coletaveis, false);
             var terra = vaso.transform.Find("potted_plant_02_dirt"); if (terra != null) terra.gameObject.SetActive(false);
             var brilho = Luz(luzes, "Brilho_Muda_" + id, new Vector3(mudas[i].x, 1.0f, mudas[i].y), new Color(0.55f, 1f, 0.6f), 0.6f, 3.2f);
-            var plantada = ModeloAlvo("Muda_resgatada_" + id, PH + "potted_plant_02/potted_plant_02_1k.fbx", new Vector3(48.9f + i * 0.75f, 0f, 101.7f), 30f * i, 0.8f, true, coletaveis, false);
+            var plantada = ModeloAlvo("Muda_resgatada_" + id, PH + "potted_plant_02/potted_plant_02_1k.fbx", canteiro0 + passo * i, 30f * i, 0.8f, true, coletaveis, false);
             var terra2 = plantada.transform.Find("potted_plant_02_dirt"); if (terra2 != null) terra2.gameObject.SetActive(false);
             plantada.SetActive(false);
             var inter = new GameObject("Coletavel_Muda_" + id);
             inter.transform.SetParent(coletaveis); inter.transform.position = new Vector3(mudas[i].x, 0f, mudas[i].y); inter.tag = "Interactable";
             var c = inter.AddComponent<Coletavel>();
             c.tipo = "Mudas"; c.prompt = "E — resgatar muda"; c.range = 1.9f; c.som = somOk;
-            c.mensagem = "Muda resgatada: vai para o canteiro do viveiro.";
+            c.mensagem = mensagem;
             c.desativarAoColetar = new[] { vaso, brilho.gameObject };
             c.ativarAoColetar = new[] { plantada };
         }
+    }
 
-        // sinais derrubados da trilha: a placa deitada no chão volta a ficar em pé
-        var sinais = new[] { new Vector3(2.7f, 0f, 21.8f), new Vector3(24f, 0f, 53.6f), new Vector3(38.7f, 0f, 81.2f) };
+    // Sinais derrubados da trilha: a placa deitada no chão volta a ficar em pé.
+    private static void Sinais(Vector3[] sinais)
+    {
+        var somSinal = AssetDatabase.LoadAssetAtPath<AudioClip>(AUD + "caixa.wav");
         for (int i = 0; i < sinais.Length; i++)
         {
             string id = (i + 1).ToString();
@@ -382,13 +389,60 @@ public static partial class ConstrutorNivel1
         }
     }
 
+    // Resíduos espalhados (garrafa, lata e saco): recolher tira o lixo do caminho.
+    private static void Residuos(Vector3[] pontos)
+    {
+        var som = AssetDatabase.LoadAssetAtPath<AudioClip>(AUD + "caixa.wav");
+        for (int i = 0; i < pontos.Length; i++)
+        {
+            string id = (i + 1).ToString();
+            var p = pontos[i];
+            var monte = new GameObject("Residuo_" + id); monte.transform.SetParent(coletaveis);
+            ModeloAlvo("Residuo_saco_" + id, PH + "compost_bag_02/compost_bag_02_1k.fbx", p, 37f * i, 0.42f, true, monte.transform, false);
+            Cilindro(monte.transform, "Lata", p + new Vector3(0.38f, 0.06f, 0.1f), new Vector3(0.12f, 0.08f, 0.12f), Quaternion.Euler(0f, 0f, 90f), matTerminal);
+            Cilindro(monte.transform, "Garrafa", p + new Vector3(-0.3f, 0.05f, 0.25f), new Vector3(0.09f, 0.14f, 0.09f), Quaternion.Euler(90f, 30f * i, 0f), matLedVerde);
+            var brilho = Luz(luzes, "Brilho_Residuo_" + id, p + Vector3.up * 0.9f, new Color(1f, 0.7f, 0.35f), 0.5f, 3f);
+            var inter = new GameObject("Coletavel_Residuo_" + id);
+            inter.transform.SetParent(coletaveis); inter.transform.position = p; inter.tag = "Interactable";
+            var c = inter.AddComponent<Coletavel>();
+            c.tipo = "Resíduos"; c.prompt = "E — recolher resíduos"; c.range = 1.9f; c.som = som;
+            c.mensagem = "Resíduos recolhidos.";
+            c.desativarAoColetar = new[] { monte, brilho.gameObject };
+        }
+    }
+
+    // Marcas novas: num poste com o X vermelho da Vigília, o Nilo pinta a marca laranja da comunidade.
+    private static void Marcas(Vector3[] pontos)
+    {
+        var som = AssetDatabase.LoadAssetAtPath<AudioClip>(AUD + "estacao_ok.wav");
+        for (int i = 0; i < pontos.Length; i++)
+        {
+            string id = (i + 1).ToString();
+            var p = pontos[i];
+            Caixa(coletaveis, "Poste_Marca_" + id, p + Vector3.up * 1.1f, new Vector3(0.3f, 2.2f, 0.3f), matTronco);
+            var x = new GameObject("Marca_Vigilia_" + id); x.transform.SetParent(coletaveis);
+            for (int k = 0; k < 2; k++)
+                Caixa(x.transform, "Traco", p + new Vector3(0f, 1.5f, -0.16f), new Vector3(0.05f, 0.42f, 0.02f), matLedVermelho).transform.rotation = Quaternion.Euler(0f, 0f, k == 0 ? 45f : -45f);
+            var nova = new GameObject("Marca_Nova_" + id); nova.transform.SetParent(coletaveis);
+            Caixa(nova.transform, "Faixa", p + new Vector3(0f, 1.5f, -0.16f), new Vector3(0.3f, 0.32f, 0.02f), matLenco);
+            Caixa(nova.transform, "Seta", p + new Vector3(0f, 1.15f, -0.16f), new Vector3(0.12f, 0.24f, 0.02f), matLenco);
+            nova.SetActive(false);
+            var inter = new GameObject("Coletavel_Marca_" + id);
+            inter.transform.SetParent(coletaveis); inter.transform.position = p + new Vector3(0f, 0f, -0.6f); inter.tag = "Interactable";
+            var c = inter.AddComponent<Coletavel>();
+            c.tipo = "Marcas"; c.prompt = "E — deixar marca nova"; c.range = 1.9f; c.som = som;
+            c.mensagem = "Marca nova pintada: quem vier depois sabe por onde passar.";
+            c.desativarAoColetar = new[] { x };
+            c.ativarAoColetar = new[] { nova };
+        }
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Lampiões ao longo da rota e vaga-lumes
 
-    private static void Lanternas()
+    // Lampiões a cada 13 m, alternando os lados, ao longo do eixo da trilha (meia = distância do eixo).
+    private static void Lanternas(Vector2[] eixo, float meia)
     {
-        // eixo da trilha (pontos x,z) e meia-largura de cada trecho; o posto tem lampiões próprios
-        var eixo = new[] { new Vector2(0f, -8f), new Vector2(0f, 56f), new Vector2(40f, 56f), new Vector2(40f, 92f) };
         int n = 0; float lado = 1f; float falta = 8f;
         for (int s = 0; s < eixo.Length - 1; s++)
         {
@@ -397,22 +451,17 @@ public static partial class ConstrutorNivel1
             Vector2 dir = (b - a) / comp, normal = new Vector2(-dir.y, dir.x);
             for (float t = falta; t < comp; t += 13f)
             {
-                var p = a + dir * t + normal * lado * 4.75f;
+                var p = a + dir * t + normal * lado * meia;
                 lado = -lado; falta = t + 13f - comp;
-                if (Ocupado(p.x, p.y, 0.8f)) continue;
+                if (Ocupado(p.x, p.y, 0.8f) || NaAgua(p.x, p.y, 0.6f)) continue;
                 n++;
                 PosteLampiao("C08_Lampiao_rota_" + n, p.x, p.y, 2.2f);
             }
         }
     }
 
-    private static void VagaLumes()
+    private static void VagaLumes(Vector3[] pontos)
     {
-        var pontos = new[] {
-            new Vector3(-6.5f, 1.3f, 12f), new Vector3(6.5f, 1.3f, 25f), new Vector3(-6.5f, 1.3f, 39f), new Vector3(6.5f, 1.3f, 49f),
-            new Vector3(10f, 1.3f, 62.5f), new Vector3(27f, 1.3f, 49.5f), new Vector3(38f, 1.3f, 62.5f), new Vector3(48f, 1.3f, 74f),
-            new Vector3(33f, 1.3f, 86f), new Vector3(56f, 1.3f, 105.5f), new Vector3(86f, 1.3f, 115f), new Vector3(0f, 1.3f, -9f)
-        };
         var mat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Particula.mat");
         for (int i = 0; i < pontos.Length; i++)
         {
@@ -486,8 +535,9 @@ public static partial class ConstrutorNivel1
         foreach (var c in Object.FindObjectsByType<Coletavel>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             criar(c.name.Replace("Coletavel_", ""), c, c.tipo == "Sinais" ? 1.3f : 1.6f, 0.55f, 28f, false);
         // missões principais: sempre visíveis enquanto estiverem disponíveis
-        var estacao = GameObject.Find("Estacao_Viveiro");
-        if (estacao != null) criar("Estacao", estacao.GetComponentInChildren<InteractableStation>(true), 1.9f, 0.85f, 0f, false);
+        int ne = 0;
+        foreach (var est in Object.FindObjectsByType<InteractableStation>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            criar("Estacao" + (++ne > 1 ? "_" + ne : ""), est, 1.9f, 0.85f, 0f, false);
         criar("Bateria", Object.FindAnyObjectByType<BateriaSentinela>(FindObjectsInactive.Include), 1.5f, 0.8f, 0f, false);
         criar("Terminal", Object.FindAnyObjectByType<LevelExit>(FindObjectsInactive.Include), 2.4f, 0.85f, 0f, true);
     }
@@ -551,9 +601,15 @@ public static partial class ConstrutorNivel1
         }
     }
 
-    private static void Cutscenes()
+    private static GameObject cutRaizUI;
+    private static RectTransform cutFaixaTopo, cutFaixaBase;
+    private static Text cutLegenda, cutTitulo;
+    private static Transform cutRaiz;
+
+    // Interface comum das cutscenes (faixas pretas, legenda, título e dica de pular) e o HUD que some nelas.
+    private static void CriarUICutscene()
     {
-        foreach (var nome in new[] { "Cutscenes", "Canvas_Cutscene", "Antena_Serra" })
+        foreach (var nome in new[] { "Cutscenes", "Canvas_Cutscene" })
         {
             var velho = GameObject.Find(nome);
             if (velho != null) Object.DestroyImmediate(velho);
@@ -598,18 +654,35 @@ public static partial class ConstrutorNivel1
         var dica = texto("Dica_Pular", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-190f, -40f), new Vector2(340f, 40f), 22, TextAnchor.MiddleRight);
         dica.text = "E / Espaço: pular"; dica.color = new Color(0.75f, 0.75f, 0.75f);
         raizUI.SetActive(false);
+        cutRaizUI = raizUI; cutFaixaTopo = faixaTopo; cutFaixaBase = faixaBase; cutLegenda = legenda; cutTitulo = titulo;
+        cutRaiz = new GameObject("Cutscenes").transform;
 
-        var raiz = new GameObject("Cutscenes").transform;
-        System.Func<string, Cutscene.Tomada[], Cutscene.Fala[], Cutscene> criar = (id, tomadas, falas) =>
+        var gm = GameObject.Find("GameManager").GetComponent<GameManager>();
+        var lista = new List<GameObject>();
+        foreach (var n in new[] { "HUD_Nivel", "HUD_Objetivo", "HUD_Estacao", "HUD_Vidas", "Aviso_Interacao" })
         {
-            var go = new GameObject("Cutscene_" + id);
-            go.transform.SetParent(raiz);
-            var c = go.AddComponent<Cutscene>();
-            c.id = id; c.tomadas = tomadas; c.falas = falas;
-            c.raizUI = raizUI; c.faixaTopo = faixaTopo; c.faixaBase = faixaBase; c.legenda = legenda; c.titulo = titulo;
-            ReservarCaminho(tomadas);
-            return c;
-        };
+            var h = canvasJogo.transform.Find(n);
+            if (h != null) lista.Add(h.gameObject);
+        }
+        gm.hudElementos = lista.ToArray();
+    }
+
+    // Cria uma cutscene com tomadas e falas; o caminho da câmera fica reservado para a floresta não tapar a vista.
+    private static Cutscene NovaCutscene(string id, Cutscene.Tomada[] tomadas, Cutscene.Fala[] falas)
+    {
+        var go = new GameObject("Cutscene_" + id);
+        go.transform.SetParent(cutRaiz);
+        var c = go.AddComponent<Cutscene>();
+        c.id = id; c.tomadas = tomadas; c.falas = falas;
+        c.raizUI = cutRaizUI; c.faixaTopo = cutFaixaTopo; c.faixaBase = cutFaixaBase; c.legenda = cutLegenda; c.titulo = cutTitulo;
+        ReservarCaminho(tomadas);
+        return c;
+    }
+
+    private static void Cutscenes()
+    {
+        CriarUICutscene();
+        System.Func<string, Cutscene.Tomada[], Cutscene.Fala[], Cutscene> criar = NovaCutscene;
 
         // 1) abertura: do alto da trilha até a comunidade, o rosto do Nilo e o caminho à frente
         var abertura = criar("Abertura", new[] {
@@ -656,20 +729,10 @@ public static partial class ConstrutorNivel1
         });
         cenaFinal.neblinaFim = 170f;
         Object.FindAnyObjectByType<LevelExit>(FindObjectsInactive.Include).cutsceneFinal = cenaFinal;
-
-        // o HUD some durante as cenas
-        var gm = GameObject.Find("GameManager").GetComponent<GameManager>();
-        var lista = new List<GameObject>();
-        foreach (var n in new[] { "HUD_Nivel", "HUD_Objetivo", "HUD_Estacao", "HUD_Vidas", "Aviso_Interacao" })
-        {
-            var h = canvasJogo.transform.Find(n);
-            if (h != null) lista.Add(h.gameObject);
-        }
-        gm.hudElementos = lista.ToArray();
     }
 
     // Antena de rádio na serra, vista de longe no final do nível 1 (o destino do jogo).
-    private static void Antena(Vector3 base0)
+    private static void Antena(Vector3 base0, bool comMata = true)
     {
         var raiz = new GameObject("Antena_Serra").transform;
         const float altura = 26f;
@@ -697,7 +760,7 @@ public static partial class ConstrutorNivel1
         string[] especies = { TGD + "Sumauma/CiabaTree_01.dae|V01_Sumauma_serra|2.1|0", "Assets/Terceiros/OpenGameArt/Yughues_Palmeiras_v3/palm_straight.FBX|V02_Palmeira_reta_serra|2.5|0",
                               TGD + "Embauba/CecropiaTree01.DAE|V04_Embauba_serra|2.0|0", "Assets/Terceiros/OpenGameArt/Yughues_Palmeira_v2/palm_tree.FBX|V03_Palmeira_v2_serra|1.3|0" };
         var r = new System.Random(11);
-        for (int i = 0; i < 34; i++)
+        for (int i = 0; i < (comMata ? 34 : 0); i++)
         {
             float ang = (float)r.NextDouble() * Mathf.PI * 2f, dist = 5f + (float)r.NextDouble() * 24f;
             var p = base0 + new Vector3(Mathf.Cos(ang) * dist, 0f, Mathf.Sin(ang) * dist);
@@ -716,6 +779,12 @@ public static partial class ConstrutorNivel1
         public Especie(string path, string nome, float escala, float rx, float y, float peso) { this.path = path; this.nome = nome; this.escala = escala; this.rx = rx; this.y = y; this.peso = peso; }
     }
 
+    private static bool NaAgua(float x, float z, float margem)
+    {
+        foreach (var a in Aguas) if (x > a[0] - margem && x < a[2] + margem && z > a[1] - margem && z < a[3] + margem) return true;
+        return false;
+    }
+
     private static Especie Sortear(List<Especie> lista)
     {
         float total = 0f; foreach (var e in lista) total += e.peso;
@@ -724,13 +793,9 @@ public static partial class ConstrutorNivel1
         return lista[lista.Count - 1];
     }
 
-    private static void Vegetacao(Transform raizVeg)
+    // area: xmin, zmin, xmax, zmax onde as árvores podem cair (o sub-bosque usa a mesma área, 6 m para dentro).
+    private static void Vegetacao(Transform raizVeg, float[] area, int maxArvores, int maxSub)
     {
-        // espécies de peso (dezenas de milhares de triângulos) entram uma vez, em pontos escolhidos
-        Ocupar(Modelo("V06_Monguba", PH + "pachira_aquatica_01/pachira_aquatica_01_1k.fbx", new Vector3(50.5f, 0f, 109.5f), 0f, 1.7f, raizVeg));
-        Ocupar(Modelo("V12_Arbusto_folha_larga", PH + "shrub_04/shrub_04_1k.fbx", new Vector3(-6.4f, 0f, 14f), 0f, 3.2f, raizVeg));
-        Ocupar(Modelo("V14_Anturio", PH + "anthurium_botany_01/anthurium_botany_01_1k.fbx", new Vector3(5.8f, 0f, 33f), 0f, 1.22f, raizVeg));
-        Ocupar(Modelo("V15_Calathea", PH + "calathea_orbifolia_01/calathea_orbifolia_01_1k.fbx", new Vector3(-5.9f, 0f, 49f), 0f, 1.41f, raizVeg));
 
         var arvores = new List<Especie> {
             new Especie(TGD + "Sumauma/CiabaTree_01.dae", "V01_Sumauma", 2.1f, 0f, 0f, 22f),
@@ -753,12 +818,12 @@ public static partial class ConstrutorNivel1
 
         var colocadas = new List<Vector2>();
         int nArv = 0, tent = 0;
-        while (nArv < 440 && tent++ < 90000)
+        while (nArv < maxArvores && tent++ < 90000)
         {
-            float x = Mathf.Lerp(-36f, 148f, (float)rng.NextDouble());
-            float z = Mathf.Lerp(-32f, 144f, (float)rng.NextDouble());
+            float x = Mathf.Lerp(area[0], area[2], (float)rng.NextDouble());
+            float z = Mathf.Lerp(area[1], area[3], (float)rng.NextDouble());
             float d = DistanciaTrilha(x, z);
-            if (d < 2.9f || d > 27f) continue;
+            if (d < 2.9f || d > 27f || NaAgua(x, z, 2f)) continue;
             float minD = d < 9f ? 3.4f : (d < 16f ? 5f : 9.5f);   // junto da trilha mais denso, ao longe esparso
             if (Ocupado(x, z, 1.2f)) continue;
             bool livre = true;
@@ -774,12 +839,12 @@ public static partial class ConstrutorNivel1
 
         var baixas = new List<Vector2>();
         int nSub = 0; tent = 0;
-        while (nSub < 330 && tent++ < 90000)
+        while (nSub < maxSub && tent++ < 90000)
         {
-            float x = Mathf.Lerp(-30f, 142f, (float)rng.NextDouble());
-            float z = Mathf.Lerp(-26f, 138f, (float)rng.NextDouble());
+            float x = Mathf.Lerp(area[0] + 6f, area[2] - 6f, (float)rng.NextDouble());
+            float z = Mathf.Lerp(area[1] + 6f, area[3] - 6f, (float)rng.NextDouble());
             float d = DistanciaTrilha(x, z);
-            if (d < 1.7f || d > 7f) continue;
+            if (d < 1.7f || d > 7f || NaAgua(x, z, 1f)) continue;
             if (Ocupado(x, z, 0.4f)) continue;
             bool livre = true;
             foreach (var p in baixas) { float dx = p.x - x, dz = p.y - z; if (dx * dx + dz * dz < 1.8f * 1.8f) { livre = false; break; } }
@@ -812,11 +877,10 @@ public static partial class ConstrutorNivel1
         return m;
     }
 
-    private static void PosProcessamento()
+    private static void PosProcessamento(string path, Ambiente amb)
     {
         var existente = GameObject.Find("Volume_Global");
         if (existente != null) Object.DestroyImmediate(existente);
-        const string path = "Assets/Settings/PerfilPosProcessamento.asset";
         AssetDatabase.DeleteAsset(path);
         var perfil = ScriptableObject.CreateInstance<VolumeProfile>();
         AssetDatabase.CreateAsset(perfil, path);
@@ -826,7 +890,7 @@ public static partial class ConstrutorNivel1
         var vinheta = perfil.Add<Vignette>(true);
         vinheta.intensity.Override(0.3f); vinheta.smoothness.Override(0.45f);
         var cores = perfil.Add<ColorAdjustments>(true);
-        cores.postExposure.Override(0.15f); cores.contrast.Override(12f); cores.saturation.Override(10f); cores.colorFilter.Override(new Color(0.93f, 1f, 0.96f));
+        cores.postExposure.Override(amb.exposicao); cores.contrast.Override(12f); cores.saturation.Override(10f); cores.colorFilter.Override(amb.filtro);
         var tom = perfil.Add<Tonemapping>(true);
         tom.mode.Override(TonemappingMode.ACES);
         foreach (var comp in new VolumeComponent[] { bloom, vinheta, cores, tom }) AssetDatabase.AddObjectToAsset(comp, perfil);
