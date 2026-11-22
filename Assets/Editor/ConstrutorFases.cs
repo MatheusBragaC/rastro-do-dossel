@@ -424,6 +424,7 @@ public static partial class ConstrutorNivel1
         Fossos = new[] { R(-4, 34, 4, 58), R(22, 66, 24, 74), R(32, 66, 34.4f, 74) };
         Aguas = new[] { R(-28, -20, -9, 80), R(-9, 34, -4, 58), R(4, 34, 12, 58), R(22, 58, 24, 66), R(22, 74, 24, 82), R(32, 58, 34.4f, 66), R(32, 74, 34.4f, 82) };
         areaMata = new[] { -60f, -50f, 150f, 160f };
+        relevo = new[] { 4.5f, 35f, 4f };
         Chao(true);
         registrarOcupacao = true;
 
@@ -589,6 +590,7 @@ public static partial class ConstrutorNivel1
         Fossos = new[] { R(-3, 30, 3, 31.8f) };
         Aguas = new float[0][];
         areaMata = new[] { -60f, -50f, 140f, 170f };
+        relevo = new[] { 3.5f, 14f, 11f };
         Chao(false);
         registrarOcupacao = true;
 
@@ -727,6 +729,7 @@ public static partial class ConstrutorNivel1
 
         registrarOcupacao = false;
         Vegetacao(veg, new[] { -35f, -30f, 90f, 135f }, 360, 280);
+        Lagoa(new[] { -15f, 21f, -8f, 31f });
         Finalizar(scene, Ambiente.Ravina, V(0f, 0.05f, -3f), 0f,
             "Nível 3 — Corredor de caça", "atravessar o corredor e religar o repetidor", 1,
             "Recolher os resíduos e religar o repetidor", "", "Usar o terminal do mirante",
@@ -745,6 +748,7 @@ public static partial class ConstrutorNivel1
         Fossos = new[] { R(-4, 40, 4, 42) };
         Aguas = new float[0][];
         areaMata = new[] { -60f, -50f, 130f, 170f };
+        relevo = new[] { 5f, 25f, 8f };
         Chao(false);
         Degrau("Degrau_1", Trilha[3], 0.8f);
         Degrau("Degrau_2", Trilha[4], 1.6f);
@@ -875,6 +879,7 @@ public static partial class ConstrutorNivel1
 
         registrarOcupacao = false;
         Vegetacao(veg, new[] { -35f, -30f, 70f, 130f }, 340, 260);
+        Lagoa(new[] { 9f, 10f, 17f, 20f });
         AssarNavMesh(N4Path, V(-13.8f, -1f, 84.4f), V(17.6f, 3f, 107.8f));
         Finalizar(scene, Ambiente.Madrugada, V(0f, 0.05f, -3f), 0f,
             "Nível 4 — Posto das raízes", "chegar ao posto e conter a encosta", 1,
@@ -894,6 +899,7 @@ public static partial class ConstrutorNivel1
         Fossos = new[] { R(-4, 20, 4, 22.4f), R(-4, 72, 4, 74.4f) };
         Aguas = new float[0][];
         areaMata = new[] { -60f, -50f, 120f, 190f };
+        relevo = new[] { 5f, 28f, 10f };
         Chao(false);
         registrarOcupacao = true;
 
@@ -1040,6 +1046,7 @@ public static partial class ConstrutorNivel1
 
         registrarOcupacao = false;
         Vegetacao(veg, new[] { -35f, -30f, 60f, 160f }, 330, 250);
+        Lagoa(new[] { -15f, 26f, -8f, 36f });
         Finalizar(scene, Ambiente.Amanhecer, V(0f, 0.05f, -3f), 0f,
             "Nível 5 — A antena", "chegar à área de regeneração perto da antena", 2,
             "Fechar a entrada indevida da área protegida", "Desligar a sentinela da antena", "Instalar o módulo e transmitir o aviso",

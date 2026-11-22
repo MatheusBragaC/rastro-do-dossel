@@ -45,6 +45,7 @@ public static partial class ConstrutorNivel1
         var scene = IniciarCena(ScenePath, "Locais_N1", 7, 3);
         Trilha = TrilhaN1; Fossos = FossosN1; Aguas = new float[0][];
         areaMata = new[] { -60f, -60f, 260f, 260f };
+        relevo = new[] { 5f, 30f, 7f };
         Chao(false);
         // portão fechado entre a arena e a saída: abre quando a sentinela desliga
         portaoVigilia = Caixa(terreno, "Portao_Vigilia", new Vector3(108f, 1.5f, 98f), new Vector3(0.5f, 3f, 8f), matTerminal, "Ground", "Ground");
@@ -84,6 +85,7 @@ public static partial class ConstrutorNivel1
         Ocupar(Modelo("V14_Anturio", PH + "anthurium_botany_01/anthurium_botany_01_1k.fbx", new Vector3(5.8f, 0f, 33f), 0f, 1.22f, veg));
         Ocupar(Modelo("V15_Calathea", PH + "calathea_orbifolia_01/calathea_orbifolia_01_1k.fbx", new Vector3(-5.9f, 0f, 49f), 0f, 1.41f, veg));
         Vegetacao(veg, new[] { -36f, -32f, 148f, 144f }, 440, 330);
+        Lagoa(new[] { 10f, 13f, 18f, 23f });
 
         // ---------- iluminação, HUD, Nilo, câmera, GameManager ----------
         Finalizar(scene, Ambiente.Noite, new Vector3(0f, 0.05f, -3f), 0f,
@@ -126,8 +128,8 @@ public static partial class ConstrutorNivel1
         return scene;
     }
 
-    // Chão da trilha, fundo dos fossos (com água, se pedido), chão da mata recortado nos fossos e nas águas,
-    // espelhos d'água e paredes invisíveis no contorno da área jogável.
+    // Chão da trilha, fundo dos fossos (com água, se pedido), espelhos d'água e paredes invisíveis
+    // no contorno da área jogável. O chão da mata é o Terrain.
     private static void Chao(bool fossosComAgua)
     {
         for (int i = 0; i < Trilha.Length; i++)
@@ -144,31 +146,8 @@ public static partial class ConstrutorNivel1
             Laje(terreno, "Fosso_" + (i + 1) + "_Fundo", centro + Vector3.down * 3.25f, new Vector3(f[2] - f[0], 0.5f, f[3] - f[1]), matFosso);
             if (fossosComAgua) Espelho("Agua_Fosso_" + (i + 1), f);
         }
-        for (int i = 0; i < Aguas.Length; i++)
-        {
-            var a = Aguas[i];
-            Laje(terreno, "Leito_" + (i + 1), new Vector3((a[0] + a[2]) / 2f, -2.4f, (a[1] + a[3]) / 2f), new Vector3(a[2] - a[0], 0.5f, a[3] - a[1]), matFosso);
-            Espelho("Agua_" + (i + 1), a);
-        }
-        // chão da mata em faixas: grade com as bordas de todos os buracos, juntando células vizinhas
-        var buracos = new List<float[]>(Fossos); buracos.AddRange(Aguas);
-        var xs = new SortedSet<float> { areaMata[0], areaMata[2] };
-        var zs = new SortedSet<float> { areaMata[1], areaMata[3] };
-        foreach (var b in buracos) { xs.Add(b[0]); xs.Add(b[2]); zs.Add(b[1]); zs.Add(b[3]); }
-        var lx = new List<float>(xs); var lz = new List<float>(zs);
-        for (int j = 0; j + 1 < lz.Count; j++)
-        {
-            float z0 = lz[j], z1 = lz[j + 1], inicio = float.NaN;
-            for (int i = 0; i + 1 < lx.Count; i++)
-            {
-                float cx = (lx[i] + lx[i + 1]) / 2f, cz = (z0 + z1) / 2f;
-                bool buraco = false;
-                foreach (var b in buracos) if (cx > b[0] && cx < b[2] && cz > b[1] && cz < b[3]) { buraco = true; break; }
-                if (!buraco && float.IsNaN(inicio)) inicio = lx[i];
-                if (buraco && !float.IsNaN(inicio)) { Faixa(terreno, inicio, z0, lx[i], z1); inicio = float.NaN; }
-            }
-            if (!float.IsNaN(inicio)) Faixa(terreno, inicio, z0, lx[lx.Count - 1], z1);
-        }
+        for (int i = 0; i < Aguas.Length; i++) Espelho("Agua_" + (i + 1), Aguas[i]);
+        // o chão da mata, as margens e o leito das águas são o Terrain (MontarTerreno, em Finalizar)
         Paredes();
     }
 
@@ -255,6 +234,8 @@ public static partial class ConstrutorNivel1
     {
         foreach (Transform t in veg) Assentar(t.gameObject, t.name.StartsWith("V19") ? -0.55f : 0.04f);
         foreach (Transform t in rochas) if (!t.name.StartsWith("R06") && !t.name.StartsWith("R07") && !t.name.StartsWith("R08")) Assentar(t.gameObject, 0.1f);
+        MontarTerreno(scene);
+        AcompanharRelevo();
         ConfigurarAmbiente(amb, inicio, yaw);
         ConfigurarNilo(inicio, yaw, nomeFase, objetivo, etapas, mEstacao, mChefe, mSaida);
         ConfigurarHud();
@@ -619,11 +600,6 @@ public static partial class ConstrutorNivel1
 
     private static Transform Raiz(string nome) { return new GameObject(nome).transform; }
     private static GameObject Filho(Transform pai, string nome) { var g = new GameObject(nome); g.transform.SetParent(pai); return g; }
-
-    private static void Faixa(Transform pai, float x0, float z0, float x1, float z1)
-    {
-        Laje(pai, "Chao_Mata", new Vector3((x0 + x1) / 2f, -1.55f, (z0 + z1) / 2f), new Vector3(x1 - x0, 3f, z1 - z0), matMata);
-    }
 
     // Bloco de chão com textura repetida a cada 2 m (o cubo padrão esticaria a textura no comprimento).
     private static GameObject Laje(Transform pai, string nome, Vector3 pos, Vector3 tam, Material mat)
