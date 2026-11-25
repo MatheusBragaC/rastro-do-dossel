@@ -718,7 +718,7 @@ public static partial class ConstrutorNivel1
             MoitaCapim(++nm, c, V(2.8f, 0f, 2.6f));
         // gerador do holofote: explodir apaga a varredura da passarela
         var ger = new GameObject("T04_Gerador_Vigilia"); ger.transform.SetParent(tec); ger.transform.position = V(17f, 0f, 63.6f);
-        ModeloAlvo("T04_Gerador_Vigilia_Modelo", PH + "portable_generator/portable_generator_1k.fbx", V(17f, 0f, 63f), 0f, 0.9f, false, ger.transform, false);
+        var gerModelo = ModeloAlvo("T04_Gerador_Vigilia_Modelo", PH + "portable_generator/portable_generator_1k.fbx", V(17f, 0f, 63f), 0f, 0.9f, false, ger.transform, false);
         var fumGer = Fumaca(ger.transform, V(17f, 0.9f, 63f), "Fumaca_Gerador", false);
         var gerador = ger.AddComponent<Gerador>();
         gerador.prompt = "E — forçar o gerador (apaga o holofote)"; gerador.range = 2f;
@@ -727,7 +727,7 @@ public static partial class ConstrutorNivel1
         gerador.desligarAoExplodir = new[] { holofote, GameObject.Find("Luzes/Luz_Passarela"), fumGer.gameObject };
         gerador.ligarAoExplodir = new GameObject[0];
         gerador.mensagem = "O gerador explodiu: o holofote da passarela apagou.\nOs guardas continuam de lanterna — use o capim alto.";
-        Ocupar(ger);
+        Ocupar(gerModelo);   // só o modelo: os limites das partículas são enormes
         Modelo("T07_Postes_energia", PH + "modular_electricity_poles/modular_electricity_poles_1k.fbx", V(44f, 0f, 78f), 0f, 1f, tec);
 
         // ---------- estação de resíduos e repetidor ----------
