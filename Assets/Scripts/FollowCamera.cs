@@ -7,7 +7,7 @@ public class FollowCamera : MonoBehaviour
 {
     public Transform target;
     public float height = 1.5f;          // ponto que a câmera olha, acima dos pés
-    public float distance = 4.5f;
+    public float distance = 4.8f;
     public float pitch = 14f;            // inclinação para baixo, em graus
     public float mouseSensitivity = 0.12f;
     public float keyTurnSpeed = 120f;    // graus por segundo com as setas

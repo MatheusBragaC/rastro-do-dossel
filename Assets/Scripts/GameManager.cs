@@ -21,7 +21,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Vida")]
     public int maxHearts = 3;
-    public float invulnerableTime = 1.2f;   // após um golpe, outros contatos são ignorados
+    public float invulnerableTime = 1.6f;   // após um golpe, outros contatos são ignorados
 
     [Header("Referências")]
     public PlayerController player;
@@ -44,8 +44,13 @@ public class GameManager : MonoBehaviour
     public string missaoEstacao = "Ativar a estação do viveiro";
     public string missaoChefe = "Desligar a sentinela da Vigília";
     public string missaoSaida = "Usar o terminal de saída";
+    public AudioClip somConclusao;   // toque curto ao abrir a tela de conclusão
 
     public State CurrentState { get; private set; }
+
+    /// Finalidade: saber se a partida está em andamento (perigos e sons em loop param fora dela).
+    /// Entradas: nenhuma. Retorno: bool; sem GameManager na cena (teste isolado) conta como jogando.
+    public static bool Jogando { get { return Instance == null || Instance.CurrentState == State.Playing; } }
     public int StationsDone { get; private set; }
     public int Hearts { get; private set; }
     public bool AllStationsDone { get { return StationsDone >= stationsTotal; } }
@@ -163,10 +168,15 @@ public class GameManager : MonoBehaviour
         if (feedback != null) feedback.PlayHurt(invulnerableTime);
         if (respawnPoint != null)
         {
-            var rb = player.GetComponent<Rigidbody>();
+            // montado, quem volta ao ponto seguro é a moto (o Nilo é filho dela e não tem física)
+            var moto = player.GetComponentInParent<Moto>();
+            var corpo = moto != null ? moto.transform : player.transform;
+            var rb = corpo.GetComponent<Rigidbody>();
             rb.linearVelocity = Vector3.zero;
             rb.position = respawnPoint.position;
-            player.transform.position = respawnPoint.position;
+            corpo.position = respawnPoint.position;
+            if (moto != null) { rb.rotation = respawnPoint.rotation; corpo.rotation = respawnPoint.rotation; }
+            player.LimparEmpurrao();
         }
         else
         {
@@ -261,16 +271,18 @@ public class GameManager : MonoBehaviour
         AtualizarMissoes();
         messageBox.SetActive(false);
         completePanel.SetActive(true);
+        if (somConclusao != null && Camera.main != null) AudioSource.PlayClipAtPoint(somConclusao, Camera.main.transform.position, 0.8f);
     }
 
     /// Finalidade: registrar uma estação concluída.
     /// Entrada: nextObjective, texto do objetivo seguinte. Retorno: void.
-    /// Corpo: soma uma estação, atualiza o contador e o objetivo do HUD.
+    /// Corpo: soma uma estação, atualiza o contador e o objetivo do HUD. Com todas as etapas feitas,
+    /// o objetivo passa a ser a saída, mesmo que a ordem das etapas tenha sido invertida.
     public void StationCompleted(string nextObjective)
     {
         StationsDone++;
         UpdateStationText();
-        SetObjective(nextObjective);
+        SetObjective(AllStationsDone && stationsTotal > 0 ? missaoSaida : nextObjective);
         AtualizarMissoes();
     }
 

@@ -36,6 +36,7 @@ public class MovingHazard : MonoBehaviour
     /// Toca o aviso sonoro uma vez por ciclo, no instante em que sai do ponto inicial.
     void FixedUpdate()
     {
+        if (!GameManager.Jogando) return;   // parado em cutscene, falha e conclusão
         elapsed += Time.fixedDeltaTime;
         float cycle = holdStart + moveTime + holdEnd + moveTime;
         float t = elapsed % cycle;

@@ -35,7 +35,7 @@ public static partial class ConstrutorNivel1
     };
     private static readonly float[][] FossosN1 = { new[] { -4f, 40.5f, 4f, 42.5f }, new[] { 36f, 66f, 44f, 68f } };
 
-    private static Material matChao, matMata, matMadeira, matTronco, matGalho, matMarco, matPerigo, matTerminal, matLedVerde, matLedVermelho, matRocha, matEstaca, matFosso, matLenco, matCaixote, matFolhagem;
+    private static Material matChao, matMata, matMadeira, matTronco, matGalho, matMarco, matPerigo, matTerminal, matLedVerde, matLedVermelho, matRocha, matEstaca, matFosso, matLenco, matCaixote, matFolhagem, matPedra, matBloco;
     private static System.Random rng;
     private static System.Random rngVar;   // escolha de variação dos kits, separada para não mudar o espalhamento
 
@@ -103,12 +103,12 @@ public static partial class ConstrutorNivel1
         rngVar = new System.Random(sementeVariacao);
         ocupados.Clear(); registrarOcupacao = false;
         CarregarMateriais();
-        foreach (var nome in new[] { "Terreno", "Perigos", "Tutorial", "Cenario", "Cenario_Assets", "Chefe", "Luzes", "Coletaveis", "Volume_Global",
-                                     "Cutscenes", "Canvas_Cutscene", "Antena_Serra", "Marcadores", "NPCs" })
-        {
-            var velho = GameObject.Find(nome);
-            if (velho != null) Object.DestroyImmediate(velho);
-        }
+        // todas as raízes montadas pelo construtor, inclusive cópias deixadas por montagens anteriores
+        var montadas = new HashSet<string> { "Terreno", "Perigos", "Tutorial", "Cenario", "Cenario_Assets", "Chefe", "Luzes", "Coletaveis", "Volume_Global",
+                                             "Cutscenes", "Canvas_Cutscene", "Antena_Serra", "Marcadores", "NPCs",
+                                             "Cena_Moveis", "Moto_Ivo", "N4B-03_Moto_Ivo", "Repetidor_Varzea_Alta" };
+        foreach (var velho in scene.GetRootGameObjects())
+            if (montadas.Contains(velho.name)) Object.DestroyImmediate(velho);
         terreno = Raiz("Terreno");
         perigos = Raiz("Perigos");
         tutorial = Raiz("Tutorial");
@@ -529,6 +529,7 @@ public static partial class ConstrutorNivel1
         gm.missaoEstacao = mEstacao;
         gm.missaoChefe = mChefe;
         gm.missaoSaida = mSaida;
+        gm.somConclusao = AssetDatabase.LoadAssetAtPath<AudioClip>(AUD + "estacao_ok.wav");
         EditorUtility.SetDirty(gm);
     }
 
@@ -591,6 +592,7 @@ public static partial class ConstrutorNivel1
         matChao = Mat("Chao_Floresta"); matMadeira = Mat("Madeira"); matTronco = Mat("Tronco"); matGalho = Mat("Galho"); matMarco = Mat("Marco");
         matPerigo = Mat("Perigo"); matTerminal = Mat("Terminal"); matLedVerde = Mat("LedVerde"); matLedVermelho = Mat("LedVermelho"); matRocha = Mat("Rocha");
         matEstaca = Mat("Estaca"); matFosso = Mat("Fosso"); matLenco = Mat("Lenco"); matCaixote = Mat("Caixote"); matFolhagem = Mat("Folhagem");
+        matPedra = Mat("Pedra"); matBloco = Mat("Bloco");
         matMata = MaterialMata();
     }
 

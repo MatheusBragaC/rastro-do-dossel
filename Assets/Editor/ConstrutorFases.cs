@@ -164,6 +164,11 @@ public static partial class ConstrutorNivel1
         ModeloAlvo("T08_Caixa_forca", PH + "power_box_01/power_box_01_1k.fbx", pc, yaw + 8f, 0.5f, true, tec, false);
         Solido(ModeloAlvo("T10_Caixa_eletrica", PH + "utility_box_01/utility_box_01_1k.fbx", P(5.9f, 0.2f), yaw + 180f, 1.35f, true, tec));
         Solido(ModeloAlvo("P03_Tambor", PH + "barrel_03/barrel_03_1k.fbx", P(7f, 0f), yaw, 0.9f, true, apoio));
+        // peças feitas pela equipe com os materiais texturizados (caixote, laje, degrau de pedra e vara de galho)
+        Caixa(apoio, "Caixote_pecas", P(-1.3f, 0.1f) + Vector3.up * 0.3f, V(0.6f, 0.6f, 0.6f), matCaixote, true).transform.rotation = Quaternion.Euler(0f, yaw + 15f, 0f);
+        Caixa(apoio, "Laje_concreto_gerador", P(2.8f, 0f) + Vector3.up * 0.04f, V(1.5f, 0.08f, 1.1f), matBloco).transform.rotation = r;
+        Caixa(apoio, "Degrau_pedra", P(-2.2f, 0.5f) + Vector3.up * 0.12f, V(0.9f, 0.24f, 0.6f), matPedra, true).transform.rotation = r;
+        Caixa(apoio, "Vara_galho", P(-2.6f, -0.5f) + Vector3.up * 0.85f, V(0.08f, 1.8f, 0.08f), matGalho).transform.rotation = r * Quaternion.Euler(0f, 0f, 14f);
     }
 
     // Pedra de passagem (bloco do fundo do fosso até o nível da trilha) com uma rocha musgosa por cima das bordas.
@@ -1137,7 +1142,7 @@ public static partial class ConstrutorNivel1
         var ventoGo = new GameObject("Vento_Serra"); ventoGo.transform.SetParent(perigos); ventoGo.transform.position = V(0f, 3f, 62f);
         ventoGo.layer = LayerMask.NameToLayer("Ignore Raycast");
         var vbc = ventoGo.AddComponent<BoxCollider>(); vbc.isTrigger = true; vbc.size = V(8f, 8f, 20f);
-        var vento = ventoGo.AddComponent<Vento>(); vento.direcao = Vector3.right; vento.forca = 10f; vento.intervalo = 4.2f; vento.duracao = 1.5f; vento.aviso = 0.8f;
+        var vento = ventoGo.AddComponent<Vento>(); vento.direcao = Vector3.right; vento.forca = 8f; vento.intervalo = 4.2f; vento.duracao = 1.5f; vento.aviso = 0.8f;
         vento.poeira = Poeira(ventoGo.transform, V(-4.5f, 2.5f, 62f), "Poeira_Vento", new Color(0.85f, 0.75f, 0.62f, 0.8f));
         var pvs = vento.poeira.shape; pvs.shapeType = ParticleSystemShapeType.Box; pvs.scale = V(0.5f, 4f, 18f);
         var pvv = vento.poeira.velocityOverLifetime; pvv.enabled = true; pvv.x = new ParticleSystem.MinMaxCurve(8f, 12f); pvv.y = new ParticleSystem.MinMaxCurve(0f, 0f); pvv.z = new ParticleSystem.MinMaxCurve(0f, 0f);
@@ -1167,9 +1172,10 @@ public static partial class ConstrutorNivel1
         for (int i = 0; i < 6; i++) for (int k = -1; k <= 1; k += 2)
             Caixa(marcasPneu.transform, "Marca_Pneu", V(-6f - i * 1.3f, 0.035f, 104f + k * 0.8f + (i % 2) * 0.1f), V(1.2f, 0.02f, 0.3f), matFosso);
         Caixa(locais, "N5-04_Portal_regeneracao_Faixa", V(-9f, 0.02f, 106f), V(8f, 0.01f, 18f), matMata);
-        NovaEstacao(V(-2.8f, 0f, 104f), "E — fechar a entrada indevida da área protegida",
+        // estação fora do alcance de quem está dentro da cerca (x < -4,4): o portão nunca fecha com o Nilo lá dentro
+        NovaEstacao(V(-1.7f, 0f, 104f), "E — fechar a entrada indevida da área protegida",
             "", "desligar a sentinela da antena",
-            new[] { fechado }, new[] { aberto, marcasPneu });
+            new[] { fechado }, new[] { aberto, marcasPneu }).range = 2f;
 
         // ---------- sentinela e portão da antena ----------
         var portao = Caixa(terreno, "Portao_Vigilia", V(4f, 1.5f, 120f), V(16f, 3f, 0.5f), matTerminal, "Ground", "Ground");
@@ -1215,7 +1221,7 @@ public static partial class ConstrutorNivel1
         KitViveiro(V(-12.5f, 0f, 91.2f), 0f);
 
         Mudas(new[] { new Vector2(2.5f, 10f), new Vector2(-2.6f, 36f), new Vector2(11f, 44f) }, V(-8.5f, 0f, 100f), V(0f, 0f, 1.3f), "Muda resgatada: vai para a área de regeneração.");
-        Marcas(new[] { V(2.6f, 0f, 28f), V(-2.6f, 0f, 53.4f), V(2.6f, 0f, 88f) });
+        Marcas(new[] { V(2.6f, 0f, 28f), V(-2.6f, 0f, 49.5f), V(2.6f, 0f, 88f) });   // a 2ª fica no mirante, antes do espinheiro
         Lanternas(new[] { new Vector2(0f, -8f), new Vector2(0f, 90f) }, 4.75f);
         Gatilho(tutorial, "Dica_Fosso", V(0f, 1.5f, 15f), V(8f, 3f, 1.5f), "O caminho junta tudo o que você já sabe. Fosso: salte.", 4f);
         Gatilho(tutorial, "Dica_Mirante", V(0f, 1.5f, 41.5f), V(8f, 3f, 1.5f), "Mirante: dá para ver o vale inteiro daqui. Respire.", 4f);

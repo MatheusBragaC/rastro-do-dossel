@@ -79,7 +79,7 @@ public static partial class ConstrutorNivel1
         raiz.tag = "Player"; raiz.layer = nilo.layer;
         var rb = raiz.AddComponent<Rigidbody>(); rb.mass = 120f; rb.angularDamping = 5f;
         var col = raiz.AddComponent<CapsuleCollider>(); col.direction = 2; col.radius = 0.38f; col.height = 2f; col.center = V(0f, 0.42f, 0f);
-        string pmPath = "Assets/Settings/SemAtrito.asset";
+        string pmPath = "Assets/Physics/SemAtrito.asset";   // o mesmo material sem atrito do Nilo
         var pm = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(pmPath);
         if (pm == null)
         {
@@ -166,16 +166,16 @@ public static partial class ConstrutorNivel1
         var jipe = MontarJipe(V(0f, 0f, -30f));
         jipe.transform.SetParent(moveis);
         var per = jipe.AddComponent<Perseguidor>(); per.moto = moto; per.pontos = pts.ToArray();
-        per.distanciaLonge = 18f;
+        per.distanciaLonge = 18f; per.velocidadePerto = 11f;   // perto, mais lento que a moto: o zigue-zague não vira derrota certa
         per.sirene = Som(jipe, AUD + "sirene_vigilia.wav"); per.sirene.loop = true; per.sirene.maxDistance = 60f; per.sirene.volume = 0.5f;
 
         // ---------- trecho A: barreiras em zigue-zague ----------
         int nb = 0;
-        foreach (var b in new[] { V(-2.6f, 0f, 38f), V(2.6f, 0f, 52f), V(-2.6f, 0f, 66f) })
+        foreach (var b in new[] { V(-3.2f, 0f, 34f), V(3.2f, 0f, 52f), V(-3.2f, 0f, 70f) })   // 18 m entre elas e 6 m de pista livre
         {
             nb++;
             Modelo("C06_Barreira_Vigilia_estrada_" + nb, PH + "concrete_road_barrier/concrete_road_barrier_1k.fbx", b, 0f, 1.04f, armad);
-            ZonaPerigo(perigos, "Barreira_Perigo_" + nb, b + Vector3.up * 0.6f, V(4.6f, 1.2f, 0.8f));
+            ZonaPerigo(perigos, "Barreira_Perigo_" + nb, b + Vector3.up * 0.6f, V(3.6f, 1.2f, 0.8f));
         }
         Placa(cenario, "A05_Placa_curva_1", V(6.4f, 0f, 74f));
 
@@ -187,7 +187,7 @@ public static partial class ConstrutorNivel1
             var raiz = new GameObject("Tronco_Queda_" + nt); raiz.transform.SetParent(perigos); raiz.transform.position = V(40f, 4.4f, t[0]);
             raiz.layer = LayerMask.NameToLayer("Hazard"); raiz.tag = "Hazard";
             raiz.AddComponent<Rigidbody>();
-            var mh = raiz.AddComponent<MovingHazard>(); mh.travel = V(0f, -3.6f, 0f); mh.moveTime = 0.35f; mh.holdStart = 1.7f; mh.holdEnd = 0.9f; mh.startOffset = t[1];
+            var mh = raiz.AddComponent<MovingHazard>(); mh.travel = V(0f, -3.6f, 0f); mh.moveTime = 0.35f; mh.holdStart = 2.4f; mh.holdEnd = 0.5f; mh.startOffset = t[1];
             mh.cue = Som(raiz, AUD + "tronco_aviso.wav");
             Cilindro(raiz.transform, "Tronco", raiz.transform.position, V(0.9f, 5.2f, 0.9f), Quaternion.Euler(0f, 0f, 90f), matTronco);
             var bc = raiz.AddComponent<BoxCollider>(); bc.isTrigger = true; bc.size = V(10f, 0.9f, 0.9f);
@@ -209,9 +209,13 @@ public static partial class ConstrutorNivel1
             "MARA: Eles explodiram o tanque! Desvie pelo lado!");
 
         // ---------- trecho E: holofotes da Vigília cruzando a reta e explosão na ponte velha ----------
-        Holofote(V(-28f, 4f, 210f), 90f, 8f, 3.2f, 35f);
-        Holofote(V(-12f, 4f, 236f), 270f, 8f, 2.6f, 35f);
-        Holofote(V(-28f, 4f, 262f), 90f, 8f, 2.2f, 35f);
+        foreach (var h in new[] { Holofote(V(-28f, 4f, 210f), 90f, 8f, 3.2f, 35f), Holofote(V(-12f, 4f, 236f), 270f, 8f, 2.6f, 35f), Holofote(V(-28f, 4f, 262f), 90f, 8f, 2.2f, 35f) })
+        {
+            // mancha menor que a dos níveis a pé: na moto sobram ~3 m escuros em cada borda da pista
+            var z = h.transform.Find("Feixe_Chao");
+            z.GetComponent<BoxCollider>().size = V(2.4f, 1.4f, 3.4f);
+            z.Find("Mancha_Luz").localScale = V(2.4f, 0.01f, 3.4f);
+        }
         Gatilho(tutorial, "Dica_Holofotes", V(-20f, 1.5f, 196f), V(10f, 3f, 1.5f), "Holofotes: passe pelo lado escuro da estrada.", 3f);
         var entulho = new GameObject("Entulho_Estrada"); entulho.transform.SetParent(perigos);
         for (int i = 0; i < 4; i++) Caixa(entulho.transform, "Entulho", V(-17.5f - i * 0.6f, 0.4f, 282f + i * 1.3f), V(1.6f, 0.8f, 1.2f), matRocha).transform.rotation = Quaternion.Euler(0f, 30f * i, 10f);
@@ -224,6 +228,10 @@ public static partial class ConstrutorNivel1
         var tabuas = new List<Transform>();
         for (int i = 0; i < 8; i++) tabuas.Add(Caixa(ponte.transform, "Tabua_" + (i + 1), V(-20f, -0.06f, 301.25f + i * 2.5f), V(10.4f, 0.12f, 2.5f), matMadeira, "Ground", "Ground").transform);
         for (int k = -1; k <= 1; k += 2) for (int i = 0; i < 3; i++) Caixa(ponte.transform, "Ponte_Poste", V(-20f + k * 5.3f, 0.6f, 302f + i * 8f), V(0.25f, 1.2f, 0.25f), matMadeira);
+        // cair da ponte no córrego custa um coração e devolve a moto à cabeceira (sem isso ficava presa no fundo)
+        var cabeceira = new GameObject("Ponte_Retorno").transform; cabeceira.SetParent(perigos); cabeceira.position = V(-20f, 0.1f, 294f);
+        var corrego = ZonaPerigo(perigos, "Corrego_Perigo", V(-20f, -2.1f, 310f), V(40f, 3f, 20f)).GetComponent<Hazard>();
+        corrego.mode = Hazard.Mode.HitAndRespawn; corrego.respawnPoint = cabeceira;
 
         var chegadaGo = new GameObject("Chegada_Serra"); chegadaGo.transform.SetParent(perigos); chegadaGo.transform.position = V(-20f, 1.5f, 326f);
         chegadaGo.layer = LayerMask.NameToLayer("Ignore Raycast");

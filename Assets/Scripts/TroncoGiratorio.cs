@@ -26,6 +26,7 @@ public class TroncoGiratorio : MonoBehaviour
     /// aviso uma vez por volta. Usa o tempo de física, então para na pausa.
     void FixedUpdate()
     {
+        if (!GameManager.Jogando) return;   // parado em cutscene, falha e conclusão
         float step = degreesPerSecond * Time.fixedDeltaTime;
         trunkRb.MoveRotation(trunkRb.rotation * Quaternion.Euler(0f, step, 0f));
         accumulated += step;

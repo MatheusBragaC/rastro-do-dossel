@@ -20,6 +20,7 @@ public class SceneryMotion : MonoBehaviour
     /// nas extremidades e gira a peça spinner. Usa Time.deltaTime, então para na pausa.
     void Update()
     {
+        if (!GameManager.Jogando) return;
         float step = speed * Time.deltaTime;
         transform.Translate(direction.normalized * step * sign, Space.World);
         travelled += step * sign;

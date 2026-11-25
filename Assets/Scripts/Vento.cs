@@ -5,7 +5,7 @@ using UnityEngine;
 public class Vento : MonoBehaviour
 {
     public Vector3 direcao = Vector3.right;
-    public float forca = 9f;              // aceleração no ar (no chão, um terço)
+    public float forca = 9f;              // aceleração no ar (no chão, um quinto)
     public float intervalo = 4f;          // tempo entre o início de duas rajadas
     public float duracao = 1.6f;
     public float aviso = 0.8f;            // poeira antes do empurrão
@@ -13,7 +13,6 @@ public class Vento : MonoBehaviour
     public AudioSource som;
 
     private float relogio;
-    private Rigidbody nilo;
     private PlayerController controle;
 
     /// Finalidade: rajada em andamento. Retorno: bool.
@@ -23,11 +22,11 @@ public class Vento : MonoBehaviour
     void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Player")) return;
-        nilo = other.attachedRigidbody; controle = other.GetComponentInParent<PlayerController>();
+        controle = other.GetComponentInParent<PlayerController>();
     }
 
     /// Finalidade: Nilo saiu. Entrada: colisor. Retorno: void.
-    void OnTriggerExit(Collider other) { if (other.CompareTag("Player")) { nilo = null; controle = null; } }
+    void OnTriggerExit(Collider other) { if (other.CompareTag("Player")) controle = null; }
 
     /// Finalidade: ciclo da rajada. Entradas: nenhuma. Retorno: void.
     /// Corpo: conta o tempo com a partida em andamento; no aviso solta a poeira e o som.
@@ -43,11 +42,11 @@ public class Vento : MonoBehaviour
     }
 
     /// Finalidade: empurrar durante a rajada. Entradas: nenhuma. Retorno: void.
-    /// Corpo: aceleração na direção do vento, um terço dela com o Nilo no chão.
+    /// Corpo: só com a partida em andamento; passa a aceleração ao PlayerController, que a soma à velocidade
+    /// do controle (um AddForce seria apagado, porque o controle define a velocidade horizontal a cada passo).
     void FixedUpdate()
     {
-        if (nilo == null || !Soprando) return;
-        bool noChao = controle != null && controle.IsGrounded;
-        nilo.AddForce(direcao.normalized * forca * (noChao ? 0.33f : 1f), ForceMode.Acceleration);
+        if (controle == null || !Soprando || !GameManager.Jogando) return;
+        controle.Empurrar(direcao.normalized * forca);
     }
 }

@@ -14,6 +14,7 @@ public class EncostaInstavel : MonoBehaviour
     public float vida = 5f;
     public ParticleSystem poeira;
     public AudioSource somAviso;
+    public float alcance = 40f;          // distância do Nilo à linha da encosta a partir da qual ela fica ativa
 
     private float timer;
     private bool avisou;
@@ -26,12 +27,13 @@ public class EncostaInstavel : MonoBehaviour
     }
 
     /// Finalidade: controlar aviso e queda. Entradas: nenhuma. Retorno: void.
-    /// Corpo: só conta o tempo com a partida em andamento; no momento do aviso sorteia o ponto, toca a poeira
-    /// e o som; ao zerar, solta a rocha e recomeça o ciclo.
+    /// Corpo: só conta o tempo com a partida em andamento e o Nilo a menos de "alcance" da encosta (longe,
+    /// não há rochas nem som à toa); no aviso sorteia o ponto, toca a poeira e o som; ao zerar, solta a rocha.
     void Update()
     {
         var gm = GameManager.Instance;
         if (gm == null || gm.CurrentState != GameManager.State.Playing) return;
+        if (gm.player != null && DistanciaAoSegmento(gm.player.transform.position) > alcance) return;
         timer -= Time.deltaTime;
         if (!avisou && timer <= aviso)
         {
@@ -46,6 +48,15 @@ public class EncostaInstavel : MonoBehaviour
             timer = intervalo;
             avisou = false;
         }
+    }
+
+    /// Finalidade: distância de um ponto à linha da encosta. Entrada: p. Retorno: float (metros, no plano).
+    /// Corpo: projeta p no segmento inicio-fim, limitado às pontas, e mede no plano horizontal.
+    private float DistanciaAoSegmento(Vector3 p)
+    {
+        Vector3 a = inicio, d = fim - inicio; p.y = a.y = 0f; d.y = 0f;
+        float k = d.sqrMagnitude > 0f ? Mathf.Clamp01(Vector3.Dot(p - a, d) / d.sqrMagnitude) : 0f;
+        return Vector3.Distance(p, a + d * k);
     }
 
     /// Finalidade: criar uma rocha rolando.

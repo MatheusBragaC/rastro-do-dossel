@@ -27,6 +27,7 @@ public class Varredura : MonoBehaviour
     /// Corpo: ângulo senoidal em torno da direção central, aplicado com MoveRotation (o trigger acompanha a física).
     void FixedUpdate()
     {
+        if (!GameManager.Jogando) return;   // parado em cutscene, falha e conclusão
         t += Time.fixedDeltaTime;
         float angulo = Mathf.Sin(t * Mathf.PI * 2f / periodo) * amplitude;
         corpo.MoveRotation(inicial * Quaternion.Euler(0f, angulo, 0f));

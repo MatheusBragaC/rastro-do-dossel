@@ -37,6 +37,7 @@ public class PlayerFeedback : MonoBehaviour
     private float hurtTimer;
     private float airTimer;
     public float airDelay = 0.15f;   // tempo sem chão antes de mostrar a pose de queda (emendas e degraus não piscam)
+    public bool montado;              // na moto: o controle fica desligado e a pose não segue a física do Nilo
 
     /// Finalidade: obter o controlador, o Rigidbody e os renderers do Nilo. Entradas: nenhuma. Retorno: void.
     void Awake()
@@ -51,6 +52,7 @@ public class PlayerFeedback : MonoBehaviour
     /// Corpo: envia velocidade horizontal, chão, postura, velocidade vertical e interação ao Animator;
     /// dispara som e partícula só na mudança de estado (salto, pouso, início do deslize), nunca a cada
     /// quadro; toca passos em intervalos que dependem da velocidade; pisca o modelo após um golpe.
+    /// Montado na moto (montado), só o piscar de dano continua e a pose fica parada.
     void Update()
     {
         if (failed) return;
@@ -66,6 +68,15 @@ public class PlayerFeedback : MonoBehaviour
             hurtTimer -= Time.deltaTime;
             bool visible = hurtTimer <= 0f || ((int)(hurtTimer * 12f)) % 2 == 0;
             foreach (var r in renderers) r.enabled = visible;
+        }
+        if (montado)
+        {
+            if (animator != null)
+            {
+                animator.SetFloat(SpeedId, 0f); animator.SetBool(GroundedId, true);
+                animator.SetBool(CrouchedId, false); animator.SetFloat(VerticalSpeedId, 0f);
+            }
+            return;
         }
 
         if (animator != null)

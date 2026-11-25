@@ -99,10 +99,11 @@ public static partial class ConstrutorNivel1
         return g;
     }
 
-    // Poste de madeira com lampião e luz quente.
+    // Poste de galho com lampião e luz quente, fincado numa sapata de concreto.
     private static void PosteLampiao(string nome, float x, float z, float altura)
     {
-        Caixa(cenario, "Poste_" + nome, new Vector3(x, altura / 2f, z), new Vector3(0.14f, altura, 0.14f), matMadeira);
+        Caixa(cenario, "Poste_" + nome, new Vector3(x, altura / 2f, z), new Vector3(0.14f, altura, 0.14f), matGalho);
+        Caixa(cenario, "Sapata_" + nome, new Vector3(x, 0.12f, z), new Vector3(0.42f, 0.24f, 0.42f), matBloco);
         SemSombra(ModeloAlvo(nome, PH + "wooden_lantern_01/wooden_lantern_01_1k.fbx", new Vector3(x, altura, z), 0f, 0.55f, true, constr, false));
         Luz(luzes, "Luz_" + nome, new Vector3(x, altura + 0.35f, z), new Color(1f, 0.72f, 0.4f), 1.7f, 10f);
     }

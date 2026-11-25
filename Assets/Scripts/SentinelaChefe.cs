@@ -27,6 +27,7 @@ public class SentinelaChefe : MonoBehaviour
     public GameObject bracoGiro;         // braço de varredura com Hazard, ligado só durante o giro
     public GameObject bateriaInteragivel;
     public GameObject[] celulas;
+    private int totalBaterias;   // vale também sem células montadas (3)
     public Light lampada;
     public Color corMira = new Color(1f, 0.15f, 0.1f);
     public Color corAtordoada = new Color(1f, 0.8f, 0.2f);
@@ -61,7 +62,8 @@ public class SentinelaChefe : MonoBehaviour
         bodyRb = GetComponent<Rigidbody>();
         bodyRb.isKinematic = true;
         bodyRb.interpolation = RigidbodyInterpolation.Interpolate;
-        BateriasRestantes = celulas != null && celulas.Length > 0 ? celulas.Length : 3;
+        totalBaterias = celulas != null && celulas.Length > 0 ? celulas.Length : 3;
+        BateriasRestantes = totalBaterias;
         if (hazardZone != null) hazardZone.SetActive(false);
         if (bracoGiro != null) bracoGiro.SetActive(false);
         if (bateriaInteragivel != null) bateriaInteragivel.SetActive(false);
@@ -110,7 +112,7 @@ public class SentinelaChefe : MonoBehaviour
                 break;
 
             case Estado.Avancando:
-                int idx = Mathf.Clamp(celulas.Length - BateriasRestantes, 0, chargeSpeeds.Length - 1);
+                int idx = Mathf.Clamp(totalBaterias - BateriasRestantes, 0, Mathf.Max(0, chargeSpeeds.Length - 1));
                 Vector3 next = bodyRb.position + chargeDir * chargeSpeeds[idx] * dt;
                 Vector3 clamped = new Vector3(Mathf.Clamp(next.x, arenaMin.x, arenaMax.x), next.y, Mathf.Clamp(next.z, arenaMin.z, arenaMax.z));
                 bodyRb.MovePosition(clamped);
@@ -189,14 +191,14 @@ public class SentinelaChefe : MonoBehaviour
     {
         if (EstadoAtual != Estado.Atordoada) return false;
         BateriasRestantes--;
-        int removidas = celulas.Length - BateriasRestantes;
-        if (removidas - 1 < celulas.Length && celulas[removidas - 1] != null) celulas[removidas - 1].SetActive(false);
+        int removidas = totalBaterias - BateriasRestantes;
+        if (celulas != null && removidas >= 1 && removidas - 1 < celulas.Length && celulas[removidas - 1] != null) celulas[removidas - 1].SetActive(false);
         if (BateriasRestantes <= 0)
         {
             Desligar();
             return true;
         }
-        GameManager.Instance.ShowMessage(string.Format(mensagemBateria, removidas, celulas.Length), 3f);
+        GameManager.Instance.ShowMessage(string.Format(mensagemBateria, removidas, totalBaterias), 3f);
         Mirar();
         return true;
     }

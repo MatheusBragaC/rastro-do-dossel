@@ -498,6 +498,11 @@ public static partial class ConstrutorNivel1
         if (est != null) LuzArea(raizArea, "Luz_Area_Estacao", est.transform.position + Vector3.up * 3.2f, new Vector2(4f, 3f), new Color(1f, 0.82f, 0.55f), 6f);
         var saida = Object.FindAnyObjectByType<LevelExit>(FindObjectsInactive.Include);
         if (saida != null) LuzArea(raizArea, "Luz_Area_Terminal", saida.transform.position + Vector3.up * 3f, new Vector2(3f, 2f), new Color(0.6f, 0.85f, 1f), 5f);
+        // fase da moto: sem estação nem terminal, as luzes de área ficam no galpão da largada e na chegada
+        var galpao = GameObject.Find("N4B-01_Galpao_Telhado");
+        if (galpao != null) LuzArea(raizArea, "Luz_Area_Galpao", galpao.transform.position + Vector3.down * 0.3f, new Vector2(4f, 4f), new Color(1f, 0.82f, 0.55f), 6f);
+        var chegada = Object.FindAnyObjectByType<Chegada>(FindObjectsInactive.Include);
+        if (chegada != null) LuzArea(raizArea, "Luz_Area_Chegada", chegada.transform.position + Vector3.up * 2.5f, new Vector2(6f, 2f), new Color(0.6f, 0.85f, 1f), 5f);
 
         // estáticos: Terrain e peças fixas com UV de lightmap
         var flags = StaticEditorFlags.ContributeGI | StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccluderStatic | StaticEditorFlags.OccludeeStatic;

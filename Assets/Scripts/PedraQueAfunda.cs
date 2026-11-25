@@ -17,6 +17,7 @@ public class PedraQueAfunda : MonoBehaviour
     private Vector3 topo;
     private float relogio;
     private bool pisando;
+    private float topoColisor => GetComponentInChildren<Collider>().bounds.max.y;   // topo atual (desce junto ao afundar)
 
     /// Finalidade: guardar a posição de cima e preparar o corpo cinemático. Entradas: nenhuma. Retorno: void.
     void Start()
@@ -27,16 +28,17 @@ public class PedraQueAfunda : MonoBehaviour
     }
 
     /// Finalidade: perceber o Nilo em cima da pedra. Entrada: a colisão. Retorno: void.
-    /// Corpo: marca contato só se o Nilo está acima do centro (pisando, não encostando de lado).
+    /// Corpo: marca contato só com os pés do Nilo no alto da pedra (pisando, não encostando de lado).
     void OnCollisionStay(Collision c)
     {
-        if (c.collider.CompareTag("Player") && c.transform.position.y > transform.position.y) pisando = true;
+        if (c.collider.CompareTag("Player") && c.transform.position.y >= topoColisor - 0.15f) pisando = true;
     }
 
     /// Finalidade: máquina de estados da pedra. Entradas: nenhuma. Retorno: void.
     /// Corpo: firme até ser pisada; treme por "espera"; desce até "profundidade"; espera "volta"; sobe e fica firme.
     void FixedUpdate()
     {
+        if (!GameManager.Jogando) return;   // parado em cutscene, falha e conclusão
         relogio += Time.fixedDeltaTime;
         Vector3 alvo = topo;
         switch (estado)

@@ -27,6 +27,7 @@ public class Perseguidor : MonoBehaviour
     void Update()
     {
         var gm = GameManager.Instance;
+        if (sirene != null) sirene.mute = !GameManager.Jogando;   // calada em pausa, cutscene, falha e conclusão
         if (moto == null || pontos == null || pontos.Length == 0 || gm == null || gm.CurrentState != GameManager.State.Playing) return;
         if (!saiu)
         {
@@ -37,7 +38,7 @@ public class Perseguidor : MonoBehaviour
         }
         float dist = Vector3.Distance(transform.position, moto.transform.position);
         if (dist < alcance) { gm.ShowMessage("O jipe da Vigília alcançou você.", 3f); gm.FailLevel(); return; }
-        float vel = dist > distanciaLonge ? velocidadeLonge : velocidadePerto;
+        float vel = Mathf.Lerp(velocidadePerto, velocidadeLonge, Mathf.InverseLerp(distanciaLonge, distanciaLonge + 10f, dist));   // acelera aos poucos só depois de distanciaLonge
         Vector3 alvo = pontos[atual].position;
         Vector3 novo = Vector3.MoveTowards(transform.position, alvo, vel * Time.deltaTime);
         Vector3 dir = alvo - transform.position; dir.y = 0f;

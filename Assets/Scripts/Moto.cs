@@ -41,6 +41,7 @@ public class Moto : MonoBehaviour
             nrb.isKinematic = true; nrb.interpolation = RigidbodyInterpolation.None;
             nilo.GetComponent<Collider>().enabled = false;
             nilo.enabled = false;
+            var fb = nilo.GetComponent<PlayerFeedback>(); if (fb != null) fb.montado = true;
             nilo.tag = "Untagged";
             nilo.transform.SetParent(assento, false);
             nilo.transform.localPosition = Vector3.zero; nilo.transform.localRotation = Quaternion.identity;
@@ -58,7 +59,7 @@ public class Moto : MonoBehaviour
         gas = ok ? (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1f : 0f) - (kb.sKey.isPressed || kb.downArrowKey.isPressed ? 1f : 0f) : 0f;
         esterco = ok ? (kb.dKey.isPressed ? 1f : 0f) - (kb.aKey.isPressed ? 1f : 0f) : 0f;
         freioMao = ok && kb.spaceKey.isPressed;
-        if (motor != null) motor.pitch = 0.7f + Mathf.Abs(Velocidade) / velocidadeMax;
+        if (motor != null) { motor.pitch = 0.7f + Mathf.Abs(Velocidade) / velocidadeMax; motor.mute = !ok; }
     }
 
     /// Finalidade: mover a moto no passo de física. Entradas: nenhuma. Retorno: void.

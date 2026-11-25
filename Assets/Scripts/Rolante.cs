@@ -46,6 +46,7 @@ public class Rolante : MonoBehaviour
     void Update()
     {
         var gm = GameManager.Instance;
+        if (somRolar != null) somRolar.mute = !GameManager.Jogando;
         if (!rolando || gm == null || gm.CurrentState != GameManager.State.Playing) return;
         Vector3 antes = transform.position;
         transform.position = Vector3.MoveTowards(antes, fim, velocidade * Time.deltaTime);

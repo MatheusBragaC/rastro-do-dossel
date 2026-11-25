@@ -49,6 +49,8 @@ public class PlayerController : MonoBehaviour
     private float lastGroundedTime = float.NegativeInfinity;
     private float slideTimer;
     private float knockbackTimer;
+    private Vector3 empurrao;      // velocidade horizontal vinda de fora (vento), somada à do controle
+    private bool empurradoNoPasso;
     private float lastJumpTime = float.NegativeInfinity;
 
     /// Finalidade: obter componentes e guardar as dimensões originais do colisor.
@@ -131,7 +133,7 @@ public class PlayerController : MonoBehaviour
         else
         {
             float speed = (runHeld && !IsCrouched) ? runSpeed : walkSpeed;
-            Vector3 horizontal = IsSliding ? Facing * slideSpeed : MoveDir * speed;
+            Vector3 horizontal = (IsSliding ? Facing * slideSpeed : MoveDir * speed) + empurrao;
             var v = playerRb.linearVelocity;
             v.x = horizontal.x;
             v.z = horizontal.z;
@@ -139,7 +141,22 @@ public class PlayerController : MonoBehaviour
         }
 
         if (Time.time - jumpRequestTime <= jumpBuffer) TryJump();
+        if (!empurradoNoPasso) empurrao = Vector3.MoveTowards(empurrao, Vector3.zero, (IsGrounded ? 10f : 6f) * Time.fixedDeltaTime);
+        empurradoNoPasso = false;
     }
+
+    /// Finalidade: receber um empurrão externo contínuo (rajada de vento). Entrada: aceleracao horizontal em m/s².
+    /// Retorno: void. Corpo: acumula a velocidade do empurrão neste passo (no chão, um quinto: os pés seguram),
+    /// limitada a 3 m/s (menos que andar: dá para compensar); o FixedUpdate soma essa velocidade à do controle e a dissipa quando o empurrão para.
+    public void Empurrar(Vector3 aceleracao)
+    {
+        aceleracao.y = 0f;
+        empurrao = Vector3.ClampMagnitude(empurrao + aceleracao * (IsGrounded ? 0.2f : 1f) * Time.fixedDeltaTime, 3f);
+        empurradoNoPasso = true;
+    }
+
+    /// Finalidade: cancelar o empurrão externo (golpe, volta ao ponto seguro). Entradas: nenhuma. Retorno: void.
+    public void LimparEmpurrao() { empurrao = Vector3.zero; }
 
     /// Finalidade: verificar apoio válido sob os pés.
     /// Entradas: nenhuma (usa posição, raio da cápsula e groundMask). Retorno: bool.
@@ -214,6 +231,7 @@ public class PlayerController : MonoBehaviour
         if (direction.sqrMagnitude < 0.001f) direction = -Facing;
         IsSliding = false;
         knockbackTimer = knockbackTime;
+        empurrao = Vector3.zero;
         playerRb.linearVelocity = direction.normalized * knockbackSpeed + Vector3.up * 3f;
     }
 
