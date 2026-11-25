@@ -1,7 +1,8 @@
 using UnityEngine;
 
 // Guarda da Vigília com lanterna (nível 3). Vira de um lado para o outro; o Nilo é visto quando entra no cone
-// da lanterna, dentro do alcance, sem obstáculo no meio e fora das moitas. Visto: a lanterna fica vermelha,
+// da lanterna, dentro do alcance, sem obstáculo no meio e fora das moitas. Antes do flagrante há um tempo de reação:
+// a lanterna amarela avisa que o guarda está desconfiado. Visto de vez: a lanterna fica vermelha,
 // o guarda grita, o Nilo perde um coração e volta ao último ponto seguro.
 public class VisaoGuarda : MonoBehaviour
 {
@@ -9,6 +10,7 @@ public class VisaoGuarda : MonoBehaviour
     public float anguloMeio = 24f;          // metade da abertura do cone, em graus
     public float giro = 55f;                // quanto vira para cada lado
     public float periodo = 6f;              // segundos de uma ida e volta
+    public float tempoParaVer = 0.8f;       // segundos à vista até o flagrante (tempo para voltar à moita)
     public Transform olho;                  // de onde a visão sai (a lanterna)
     public Transform pontoSeguro;
     public Light lanterna;
@@ -16,7 +18,7 @@ public class VisaoGuarda : MonoBehaviour
     public AudioSource grito;
     [TextArea] public string fala = "GUARDA: Tem alguém na ravina!";
 
-    private float yawInicial, espera;
+    private float yawInicial, espera, suspeita;
     private Transform nilo;
     private Color corNormal;
 
@@ -31,13 +33,17 @@ public class VisaoGuarda : MonoBehaviour
 
     /// Finalidade: virar e vigiar. Entradas: nenhuma. Retorno: void.
     /// Corpo: só com a partida em andamento; gira em seno; depois de um flagrante, espera 2 s antes de vigiar de novo.
+    /// Com o Nilo à vista a suspeita sobe (lanterna puxa para o amarelo) e, ao chegar a tempoParaVer, vira flagrante;
+    /// fora de vista ela desce no mesmo ritmo.
     void Update()
     {
         var gm = GameManager.Instance;
         if (gm == null || gm.CurrentState != GameManager.State.Playing || nilo == null) return;
         transform.rotation = Quaternion.Euler(0f, yawInicial + Mathf.Sin(Time.time * Mathf.PI * 2f / periodo) * giro, 0f);
         if (espera > 0f) { espera -= Time.deltaTime; if (espera <= 0f && lanterna != null) lanterna.color = corNormal; return; }
-        if (Ve(nilo.position + Vector3.up)) Flagrante(gm);
+        suspeita = Mathf.Clamp(suspeita + (Ve(nilo.position + Vector3.up) ? Time.deltaTime : -Time.deltaTime), 0f, tempoParaVer);
+        if (lanterna != null) lanterna.color = Color.Lerp(corNormal, new Color(1f, 0.85f, 0.1f), suspeita / tempoParaVer);
+        if (suspeita >= tempoParaVer) Flagrante(gm);
     }
 
     /// Finalidade: dizer se o Nilo, nesse ponto, está à vista do guarda.
@@ -63,7 +69,7 @@ public class VisaoGuarda : MonoBehaviour
     /// Corpo: lanterna vermelha, grito e fala; tira um coração e devolve ao ponto seguro.
     public void Flagrante(GameManager gm)
     {
-        espera = 2f;
+        espera = 2f; suspeita = 0f;
         if (lanterna != null) lanterna.color = new Color(1f, 0.2f, 0.15f);
         if (grito != null) grito.Play();
         gm.TakeHit(transform.position, pontoSeguro);

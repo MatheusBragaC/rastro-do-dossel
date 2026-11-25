@@ -278,11 +278,12 @@ public static partial class ConstrutorNivel1
         l.intensity = 9f; l.color = new Color(1f, 0.93f, 0.75f); l.shadows = LightShadows.None;
         // leque de luz no chão mostrando o alcance e a abertura da visão (gira com o guarda)
         var leque = new GameObject("Cone_Visao_Chao"); leque.transform.SetParent(g.transform, false); leque.transform.localPosition = V(0f, 0.06f, 0f);
-        leque.AddComponent<MeshFilter>().sharedMesh = MalhaLeque(alcance, 24f);
+        leque.AddComponent<MeshFilter>().sharedMesh = MalhaLeque(alcance, 20f);
         var lr = leque.AddComponent<MeshRenderer>(); lr.sharedMaterial = MaterialTransparente("Feixe", new Color(1f, 0.97f, 0.75f, 0.28f), true);
         lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         var v = g.AddComponent<VisaoGuarda>();
         v.olho = olho; v.lanterna = l; v.alcance = alcance; v.pontoSeguro = seguro;
+        v.anguloMeio = 20f;   // cone de 40°: dá para passar entre uma virada e outra
         v.obstaculos = LayerMask.GetMask("Ground", "Default");
         v.grito = Som(g, AUD + "falha.wav");
         return v;
@@ -728,9 +729,9 @@ public static partial class ConstrutorNivel1
         // furtividade: guardas com lanterna vigiam o corredor; o capim alto esconde o Nilo
         var seguroE = new GameObject("Ponto_Seguro_Corredor").transform; seguroE.SetParent(perigos); seguroE.position = V(0f, 0f, 61f);
         var seguroF = new GameObject("Ponto_Seguro_Subida").transform; seguroF.SetParent(perigos); seguroF.position = V(37f, 0f, 68f);
-        var g1 = GuardaVigia("Guarda_Patrulha_1", V(10.5f, 0f, 71.6f), 180f, seguroE, 9f); g1.giro = 60f; g1.periodo = 5.5f;
-        var g2 = GuardaVigia("Guarda_Patrulha_2", V(24f, 0f, 62.4f), 0f, seguroE, 9f); g2.giro = 55f; g2.periodo = 6.5f;
-        var g3 = GuardaVigia("Guarda_Patrulha_3", V(41.6f, 0f, 81f), 270f, seguroF, 9f); g3.giro = 50f; g3.periodo = 5f;
+        var g1 = GuardaVigia("Guarda_Patrulha_1", V(10.5f, 0f, 71.6f), 180f, seguroE, 7.5f); g1.giro = 60f; g1.periodo = 5.5f;
+        var g2 = GuardaVigia("Guarda_Patrulha_2", V(24f, 0f, 62.4f), 0f, seguroE, 7.5f); g2.giro = 55f; g2.periodo = 6.5f;
+        var g3 = GuardaVigia("Guarda_Patrulha_3", V(41.6f, 0f, 81f), 270f, seguroF, 7.5f); g3.giro = 50f; g3.periodo = 5f;
         int nm = 0;
         foreach (var c in new[] { V(4.5f, 0f, 67f), V(10.5f, 0f, 65.4f), V(16.5f, 0f, 68.4f), V(22.5f, 0f, 67f), V(28.5f, 0f, 65.6f), V(34f, 0f, 67.4f), V(37f, 0f, 76f), V(37.8f, 0f, 84f) })
             MoitaCapim(++nm, c, V(2.8f, 0f, 2.6f));
