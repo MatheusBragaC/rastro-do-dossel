@@ -9,7 +9,7 @@ TerrainLayer:
   m_Name: L06_RochaExposta
   m_DiffuseTexture: {fileID: 2800000, guid: ba88564a5fd88bf0f8a9e56b35470225, type: 3}
   m_NormalMapTexture: {fileID: 2800000, guid: bdd0a7ff1c1457accbed9708dca692e3, type: 3}
-  m_MaskMapTexture: {fileID: 0}
+  m_MaskMapTexture: {fileID: 2800000, guid: f9a674953cbe1487fabfa6616933fe66, type: 3}
   m_TileSize: {x: 5, y: 5}
   m_TileOffset: {x: 0, y: 0}
   m_Specular: {r: 0, g: 0, b: 0, a: 0}
@@ -19,5 +19,5 @@ TerrainLayer:
   m_DiffuseRemapMin: {x: 0, y: 0, z: 0, w: 0}
   m_DiffuseRemapMax: {x: 1, y: 1, z: 1, w: 1}
   m_MaskMapRemapMin: {x: 0, y: 0, z: 0, w: 0}
-  m_MaskMapRemapMax: {x: 1, y: 1, z: 1, w: 1}
+  m_MaskMapRemapMax: {x: 0, y: 1, z: 1, w: 0.15}
   m_SmoothnessSource: 0

@@ -9,7 +9,7 @@ TerrainLayer:
   m_Name: L01_TerraSeca
   m_DiffuseTexture: {fileID: 2800000, guid: 81ff3dff55908eec0b252dce5c226ee2, type: 3}
   m_NormalMapTexture: {fileID: 2800000, guid: a83096969ec531d7f8b28c4e523dab28, type: 3}
-  m_MaskMapTexture: {fileID: 0}
+  m_MaskMapTexture: {fileID: 2800000, guid: d22662510f13ef6f9b0d31da7ef52563, type: 3}
   m_TileSize: {x: 3.5, y: 3.5}
   m_TileOffset: {x: 0, y: 0}
   m_Specular: {r: 0, g: 0, b: 0, a: 0}
@@ -19,5 +19,5 @@ TerrainLayer:
   m_DiffuseRemapMin: {x: 0, y: 0, z: 0, w: 0}
   m_DiffuseRemapMax: {x: 1, y: 1, z: 1, w: 1}
   m_MaskMapRemapMin: {x: 0, y: 0, z: 0, w: 0}
-  m_MaskMapRemapMax: {x: 1, y: 1, z: 1, w: 1}
+  m_MaskMapRemapMax: {x: 0, y: 1, z: 1, w: 0.05}
   m_SmoothnessSource: 0

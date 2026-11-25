@@ -184,9 +184,11 @@ public class Cutscene : MonoBehaviour
     }
 
     /// Finalidade: terminar a cena (fim natural ou pulo). Entradas: nenhuma. Retorno: void.
-    /// Corpo: esconde a interface, devolve a névoa e a câmera do jogo; o controle volta no quadro seguinte.
+    /// Corpo: só age se a cena está tocando (senão devolveria uma névoa que nunca guardou); esconde a interface,
+    /// devolve a névoa e a câmera do jogo; o controle volta no quadro seguinte.
     private void Encerrar()
     {
+        if (!tocando) return;
         tocando = false;
         encerrando = true;
         raizUI.SetActive(false);

@@ -10,6 +10,7 @@ public static partial class ConstrutorNivel1
     private const string PastaTerreno = "Assets/Terreno";
     private const float ChaoMata = -0.05f;        // altura do chão fora da trilha (o topo da trilha fica em 0,015)
     private const float BaseTerreno = -4f, AlturaTerreno = 26f;
+    private const float TopoTrilha = 0.015f;      // o Terrain desenha o caminho na altura do colisor da trilha
 
     // relevo da fase: distância da trilha em que o chão começa a subir, largura da subida e altura máxima (m)
     private static float[] relevo = { 5f, 30f, 7f };
@@ -118,6 +119,9 @@ public static partial class ConstrutorNivel1
         ter.drawTreesAndFoliage = false;
         ter.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
         terrenoAtual = ter;
+        // a trilha passa a ser desenhada pelo Terrain; as lajes ficam só como colisor (salto e deslize iguais)
+        foreach (Transform t in terreno) if (t.name.StartsWith("Trilha_")) { var mr = t.GetComponent<MeshRenderer>(); if (mr != null) mr.enabled = false; }
+        GramineasEArvores(ter, x0, z0, sx, sz, tetos);
 
         var log = new System.Text.StringBuilder(scene.name + " — Terrain " + sx + " x " + sz + " m; camadas na faixa visível (até 18 m da trilha):");
         for (int k = 0; k < 10; k++) log.Append(" " + NomesCamadas[k].Substring(0, 3) + " " + (100.0 * soma[k] / Mathf.Max(1, nVisiveis)).ToString("0.0") + "%");
@@ -181,7 +185,7 @@ public static partial class ConstrutorNivel1
         else if (s < 3f) h = Mathf.Lerp(-0.52f, h, S01(s / 3f));
 
         if (Dentro(Fossos, x, z, celula * 0.5f)) h = -3.4f;
-        else if (Dentro(Trilha, x, z, 0f)) h = ChaoMata;
+        else if (Dentro(Trilha, x, z, 0f)) h = TopoTrilha;
 
         // teto: nada de morro na frente das câmeras das cutscenes
         foreach (var seg in tetos)
@@ -244,6 +248,11 @@ public static partial class ConstrutorNivel1
         w[7] = 0.2f + 0.6f * S01((d - 2.5f) / 4f);                                                              // L08 folhas caídas
         w[8] = 1.1f * mancha(8, 0.47f) * S01((inc - 6f) / 8f) * (1f - S01((inc - 32f) / 8f)) + 0.6f * rocha * mancha(18, 0.4f); // L09 solo com musgo
         w[9] = 2.6f * rec + 0.45f * mancha(9, 0.76f) * perto;                                                     // L10 solo em recuperação
+        if (d <= 0f)   // o caminho: terra batida e cascalho, com um pouco de folha nas beiras
+        {
+            w[0] += 0.5f; w[4] += 1.9f + 0.6f * fino;
+            w[5] *= 0.2f; w[6] *= 0.05f; w[7] *= 0.25f; w[8] *= 0.15f; w[9] *= 0.3f;
+        }
         if (s < -0.3f) for (int k = 0; k < 10; k++) if (k != 3 && k != 2) w[k] *= 0.1f;                       // fundo da água: areia e lama
         for (int k = 0; k < 10; k++) w[k] = Mathf.Max(w[k], 0.0001f);
     }
@@ -300,6 +309,7 @@ public static partial class ConstrutorNivel1
         var m = AssetDatabase.LoadAssetAtPath<Material>(path);
         if (m == null) { m = new Material(Shader.Find("Universal Render Pipeline/Terrain/Lit")); AssetDatabase.CreateAsset(m, path); }
         m.EnableKeyword("_NORMALMAP");
+        m.EnableKeyword("_MASKMAP");
         EditorUtility.SetDirty(m);
         return m;
     }
@@ -344,6 +354,9 @@ public static partial class ConstrutorNivel1
             tl.smoothnessSource = TerrainLayerSmoothnessSource.Constant;
             tl.metallic = 0f;
             tl.normalScale = 1f;
+            tl.maskMapTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(MapaMascara(k, (string)def[k][0]));
+            tl.maskMapRemapMin = Vector4.zero;
+            tl.maskMapRemapMax = new Vector4(0f, 1f, 1f, tl.smoothness);   // R metal, G oclusão, B altura, A suavidade
             tl.diffuseRemapMax = k == 6 ? new Vector4(0.78f, 0.9f, 0.72f, 1f) : Vector4.one;   // grama com o mesmo tom do chão antigo
             EditorUtility.SetDirty(tl);
             camadas[k] = tl;
@@ -446,7 +459,7 @@ public static partial class ConstrutorNivel1
     }
 
     // Grava a difusa e o mapa normal de uma receita (512 x 512, repetível).
-    private static void Textura(string nome, float forcaNormal, System.Func<float, float, Vector4> receita)
+    private static void Textura(string nome, float forcaNormal, System.Func<float, float, Vector4> receita, string destino = null)
     {
         const int N = 512;
         var cor = new Color[N * N]; var alt = new float[N * N];
@@ -466,9 +479,48 @@ public static partial class ConstrutorNivel1
                 var n = new Vector3(-dx * forcaNormal, -dy * forcaNormal, 1f).normalized;
                 nor[j * N + i] = new Color(n.x * 0.5f + 0.5f, n.y * 0.5f + 0.5f, n.z * 0.5f + 0.5f, 1f);
             }
-        string pasta = PastaTerreno + "/Texturas/";
+        string pasta = (destino ?? PastaTerreno + "/Texturas") + "/";
         Gravar(pasta + nome + ".png", cor, N, false);
         Gravar(pasta + nome + "_N.png", nor, N, true);
+        GravarMascara(pasta + nome + "_M.png", alt, N);
+    }
+
+    // Mapa de máscara do URP: R metal (0), G oclusão (1), B altura (height map normalizado), A suavidade (1, ajustada na camada).
+    private static void GravarMascara(string path, float[] alt, int n)
+    {
+        float lo = float.MaxValue, hi = float.MinValue;
+        foreach (var a in alt) { lo = Mathf.Min(lo, a); hi = Mathf.Max(hi, a); }
+        var px = new Color[n * n];
+        for (int i = 0; i < px.Length; i++) px[i] = new Color(0f, 1f, (alt[i] - lo) / Mathf.Max(0.0001f, hi - lo), 1f);
+        var t = new Texture2D(n, n, TextureFormat.RGBA32, false, true);
+        t.SetPixels(px); t.Apply();
+        System.IO.File.WriteAllBytes(path, t.EncodeToPNG());
+        Object.DestroyImmediate(t);
+        AssetDatabase.ImportAsset(path);
+        var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+        imp.sRGBTexture = false; imp.wrapMode = TextureWrapMode.Repeat; imp.maxTextureSize = 512;
+        imp.SaveAndReimport();
+    }
+
+    // Caminho do mapa de máscara de uma camada; nas texturas Poly Haven a altura sai da luminância da difusa.
+    private static string MapaMascara(int k, string difusa)
+    {
+        string pasta = PastaTerreno + "/Texturas/";
+        string path = pasta + NomesCamadas[k] + "_M.png";
+        if (AssetDatabase.LoadAssetAtPath<Texture2D>(path) != null) return path;
+        if (difusa.StartsWith(pasta)) return path;   // gerada junto com a textura
+        var src = new Texture2D(2, 2);
+        src.LoadImage(System.IO.File.ReadAllBytes(difusa));
+        int n = 512; var alt = new float[n * n];
+        for (int j = 0; j < n; j++)
+            for (int i = 0; i < n; i++)
+            {
+                var c = src.GetPixelBilinear((i + 0.5f) / n, (j + 0.5f) / n);
+                alt[j * n + i] = 0.3f * c.r + 0.59f * c.g + 0.11f * c.b;
+            }
+        Object.DestroyImmediate(src);
+        GravarMascara(path, alt, n);
+        return path;
     }
 
     private static void Gravar(string path, Color[] px, int n, bool normal)

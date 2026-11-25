@@ -9,7 +9,7 @@ TerrainLayer:
   m_Name: L07_GramaBaixa
   m_DiffuseTexture: {fileID: 2800000, guid: e8883dbe7210a590ebc0ebbeb312f860, type: 3}
   m_NormalMapTexture: {fileID: 2800000, guid: c9e4f617faa25e8a1ba1723b7137edcc, type: 3}
-  m_MaskMapTexture: {fileID: 0}
+  m_MaskMapTexture: {fileID: 2800000, guid: 84cecdae332422ee398155ac3475913a, type: 3}
   m_TileSize: {x: 2.5, y: 2.5}
   m_TileOffset: {x: 0, y: 0}
   m_Specular: {r: 0, g: 0, b: 0, a: 0}
@@ -19,5 +19,5 @@ TerrainLayer:
   m_DiffuseRemapMin: {x: 0, y: 0, z: 0, w: 0}
   m_DiffuseRemapMax: {x: 0.78, y: 0.9, z: 0.72, w: 1}
   m_MaskMapRemapMin: {x: 0, y: 0, z: 0, w: 0}
-  m_MaskMapRemapMax: {x: 1, y: 1, z: 1, w: 1}
+  m_MaskMapRemapMax: {x: 0, y: 1, z: 1, w: 0.05}
   m_SmoothnessSource: 0

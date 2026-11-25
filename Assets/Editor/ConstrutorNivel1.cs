@@ -242,6 +242,7 @@ public static partial class ConstrutorNivel1
         PainelMissoes();
         ConfigurarConclusao(tituloConclusao, textoConclusao, ultima);
         PosProcessamento(perfilPos, amb);
+        Iluminacao(scene);
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
         Debug.Log(nomeFase + " montado e salvo.");

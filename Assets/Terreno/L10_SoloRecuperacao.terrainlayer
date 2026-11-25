@@ -9,7 +9,7 @@ TerrainLayer:
   m_Name: L10_SoloRecuperacao
   m_DiffuseTexture: {fileID: 2800000, guid: 74c4f402eebcff4b48480f3334eafe81, type: 3}
   m_NormalMapTexture: {fileID: 2800000, guid: 7a70a2a7adc7b0705b2fd4950e4be2a4, type: 3}
-  m_MaskMapTexture: {fileID: 0}
+  m_MaskMapTexture: {fileID: 2800000, guid: 11d0e744041d338af839c938330f5f51, type: 3}
   m_TileSize: {x: 3, y: 3}
   m_TileOffset: {x: 0, y: 0}
   m_Specular: {r: 0, g: 0, b: 0, a: 0}
@@ -19,5 +19,5 @@ TerrainLayer:
   m_DiffuseRemapMin: {x: 0, y: 0, z: 0, w: 0}
   m_DiffuseRemapMax: {x: 1, y: 1, z: 1, w: 1}
   m_MaskMapRemapMin: {x: 0, y: 0, z: 0, w: 0}
-  m_MaskMapRemapMax: {x: 1, y: 1, z: 1, w: 1}
+  m_MaskMapRemapMax: {x: 0, y: 1, z: 1, w: 0.06}
   m_SmoothnessSource: 0

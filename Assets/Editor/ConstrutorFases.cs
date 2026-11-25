@@ -24,6 +24,7 @@ public static partial class ConstrutorNivel1
     [MenuItem("Rastro do Dossel/Montar todas as fases")]
     public static void MontarTodas()
     {
+        MateriaisComTextura();
         Montar(); MontarN2(); MontarN3(); MontarN4(); MontarN5();
         ConfigurarBuild();
         ConfigurarMenuFases();

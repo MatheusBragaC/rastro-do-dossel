@@ -9,7 +9,7 @@ TerrainLayer:
   m_Name: L04_AreiaMargem
   m_DiffuseTexture: {fileID: 2800000, guid: fe9c1bda71e27faaab862bc0433650f8, type: 3}
   m_NormalMapTexture: {fileID: 2800000, guid: 258b3e7819c6d439587a742096a800f2, type: 3}
-  m_MaskMapTexture: {fileID: 0}
+  m_MaskMapTexture: {fileID: 2800000, guid: 2e8153e46ef0ad02d920bb3549b252e2, type: 3}
   m_TileSize: {x: 3, y: 3}
   m_TileOffset: {x: 0, y: 0}
   m_Specular: {r: 0, g: 0, b: 0, a: 0}
@@ -19,5 +19,5 @@ TerrainLayer:
   m_DiffuseRemapMin: {x: 0, y: 0, z: 0, w: 0}
   m_DiffuseRemapMax: {x: 1, y: 1, z: 1, w: 1}
   m_MaskMapRemapMin: {x: 0, y: 0, z: 0, w: 0}
-  m_MaskMapRemapMax: {x: 1, y: 1, z: 1, w: 1}
+  m_MaskMapRemapMax: {x: 0, y: 1, z: 1, w: 0.08}
   m_SmoothnessSource: 0

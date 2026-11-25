@@ -9,7 +9,7 @@ TerrainLayer:
   m_Name: L09_SoloMusgo
   m_DiffuseTexture: {fileID: 2800000, guid: bda3e1099fc3784b089bb6b956b77ef4, type: 3}
   m_NormalMapTexture: {fileID: 2800000, guid: 6a89fcbfc0ec6fda0b79cc3d67319d2c, type: 3}
-  m_MaskMapTexture: {fileID: 0}
+  m_MaskMapTexture: {fileID: 2800000, guid: 3f75a9c62fad1a3caacfd045f438e9cd, type: 3}
   m_TileSize: {x: 3, y: 3}
   m_TileOffset: {x: 0, y: 0}
   m_Specular: {r: 0, g: 0, b: 0, a: 0}
@@ -19,5 +19,5 @@ TerrainLayer:
   m_DiffuseRemapMin: {x: 0, y: 0, z: 0, w: 0}
   m_DiffuseRemapMax: {x: 1, y: 1, z: 1, w: 1}
   m_MaskMapRemapMin: {x: 0, y: 0, z: 0, w: 0}
-  m_MaskMapRemapMax: {x: 1, y: 1, z: 1, w: 1}
+  m_MaskMapRemapMax: {x: 0, y: 1, z: 1, w: 0.1}
   m_SmoothnessSource: 0
