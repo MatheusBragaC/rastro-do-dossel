@@ -167,10 +167,10 @@ public static partial class ConstrutorNivel1
     }
 
     // Pedra de passagem (bloco do fundo do fosso até o nível da trilha) com uma rocha musgosa por cima das bordas.
-    private static void PedraPassagem(int n, float[] r)
+    private static GameObject PedraPassagem(int n, float[] r)
     {
         var c = V((r[0] + r[2]) / 2f, -1.5f, (r[1] + r[3]) / 2f);
-        Laje(terreno, "Pedra_Passagem_" + n, c, V(r[2] - r[0], 3f, r[3] - r[1]), MaterialPedra());
+        return Laje(terreno, "Pedra_Passagem_" + n, c, V(r[2] - r[0], 3f, r[3] - r[1]), MaterialPedra());
     }
 
     // Pedra com a textura de paredão do Poly Haven (repetida a cada 2 m pela malha da laje).
@@ -239,7 +239,7 @@ public static partial class ConstrutorNivel1
     }
 
     // Holofote da Vigília num ponto alto: gira de um lado a outro e a mancha de luz no chão tira um coração.
-    private static void Holofote(Vector3 pos, float yaw, float alcance, float periodo, float amplitude)
+    private static GameObject Holofote(Vector3 pos, float yaw, float alcance, float periodo, float amplitude)
     {
         var raiz = new GameObject("Holofote_Varredura");
         raiz.transform.SetParent(perigos); raiz.transform.position = pos; raiz.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
@@ -260,6 +260,60 @@ public static partial class ConstrutorNivel1
         zona.AddComponent<Hazard>().mode = Hazard.Mode.Hit;
         var mancha = Cilindro(zona.transform, "Mancha_Luz", alvo + Vector3.up * 0.06f, V(3.2f, 0.01f, 5f), Quaternion.Euler(0f, yaw, 0f), MaterialTransparente("Feixe", new Color(1f, 0.97f, 0.75f, 0.28f), true));
         SemSombra(mancha);
+        return raiz;
+    }
+
+    // Guarda em terra com lanterna e cone de visão (nível 3): vê o Nilo fora das moitas.
+    private static VisaoGuarda GuardaVigia(string nome, Vector3 pos, float yaw, Transform seguro, float alcance)
+    {
+        var g = Boneco(nome, "guarda", pos, yaw);
+        var olho = new GameObject("Lanterna_Guarda").transform; olho.SetParent(g.transform, false);
+        olho.localPosition = V(0.25f, 1.45f, 0.35f); olho.localRotation = Quaternion.Euler(14f, 0f, 0f);
+        var l = olho.gameObject.AddComponent<Light>(); l.type = LightType.Spot; l.range = alcance * 1.3f; l.spotAngle = 52f; l.innerSpotAngle = 30f;
+        l.intensity = 9f; l.color = new Color(1f, 0.93f, 0.75f); l.shadows = LightShadows.None;
+        // leque de luz no chão mostrando o alcance e a abertura da visão (gira com o guarda)
+        var leque = new GameObject("Cone_Visao_Chao"); leque.transform.SetParent(g.transform, false); leque.transform.localPosition = V(0f, 0.06f, 0f);
+        leque.AddComponent<MeshFilter>().sharedMesh = MalhaLeque(alcance, 24f);
+        var lr = leque.AddComponent<MeshRenderer>(); lr.sharedMaterial = MaterialTransparente("Feixe", new Color(1f, 0.97f, 0.75f, 0.28f), true);
+        lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        var v = g.AddComponent<VisaoGuarda>();
+        v.olho = olho; v.lanterna = l; v.alcance = alcance; v.pontoSeguro = seguro;
+        v.obstaculos = LayerMask.GetMask("Ground", "Default");
+        v.grito = Som(g, AUD + "falha.wav");
+        return v;
+    }
+
+    // Malha em leque (setor de círculo) no plano do chão, apontando para +z: o cone de visão do guarda.
+    private static Mesh MalhaLeque(float raio, float meioAngulo)
+    {
+        string path = "Assets/Modelos/Leque_Visao_" + Mathf.RoundToInt(raio) + "_" + Mathf.RoundToInt(meioAngulo) + ".asset";
+        var m = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+        if (m != null) return m;
+        const int seg = 16;
+        var v = new List<Vector3> { Vector3.zero }; var tri = new List<int>();
+        for (int i = 0; i <= seg; i++) { float a = Mathf.Deg2Rad * Mathf.Lerp(-meioAngulo, meioAngulo, i / (float)seg); v.Add(new Vector3(Mathf.Sin(a), 0f, Mathf.Cos(a)) * raio); }
+        for (int i = 1; i <= seg; i++) { tri.Add(0); tri.Add(i); tri.Add(i + 1); }
+        m = new Mesh { name = "Leque_Visao" }; m.SetVertices(v); m.SetTriangles(tri, 0); m.RecalculateNormals(); m.RecalculateBounds();
+        AssetDatabase.CreateAsset(m, path);
+        return m;
+    }
+
+    // Moita de capim alto: touceiras altas (as mesmas do Terrain) e um gatilho que esconde o Nilo dos guardas.
+    private static void MoitaCapim(int n, Vector3 centro, Vector3 tam)
+    {
+        var g = new GameObject("Moita_Capim_" + n); g.transform.SetParent(cenario); g.transform.position = centro;
+        var bc = g.AddComponent<BoxCollider>(); bc.isTrigger = true; bc.size = V(tam.x, 2f, tam.z); bc.center = V(0f, 1f, 0f);
+        g.layer = LayerMask.NameToLayer("Ignore Raycast");
+        g.AddComponent<Moita>();
+        var touceira = AssetDatabase.LoadAssetAtPath<GameObject>(PastaTerreno + "/Gramineas/Graminea_Capim.prefab");
+        var r = new System.Random(n * 13);
+        for (int i = 0; i < 14; i++)
+        {
+            var p = centro + V(((float)r.NextDouble() - 0.5f) * tam.x, 0f, ((float)r.NextDouble() - 0.5f) * tam.z);
+            var t = (GameObject)PrefabUtility.InstantiatePrefab(touceira, g.transform);
+            t.name = "Capim_Alto_" + (i + 1); t.transform.position = p; t.transform.rotation = Quaternion.Euler(0f, (float)r.NextDouble() * 360f, 0f);
+            t.transform.localScale = V(1.5f, 1.3f + 0.4f * (float)r.NextDouble(), 1.5f);
+        }
     }
 
     // Personagem em blocos parado (guardas da Vigília no nível 3).
@@ -272,6 +326,24 @@ public static partial class ConstrutorNivel1
     }
 
     // Ivo: boneco com martelo, NavMeshAgent, rota de serviço e conversa.
+    // Morador do posto: boneco que passeia pelo NavMesh entre pontos e conversa com E.
+    private static MoradorPasseio Morador(string nome, Vector3[] pontos, float pausa, string[] falas)
+    {
+        var g = Boneco(nome, "ivo", pontos[0], 0f);
+        g.tag = "Interactable";
+        g.transform.localScale = Vector3.one * 0.92f;
+        var pose = g.transform.Find("Pose");
+        var ag = g.AddComponent<NavMeshAgent>();
+        ag.radius = 0.3f; ag.height = 1.9f; ag.speed = 1.4f; ag.angularSpeed = 300f; ag.acceleration = 5f; ag.stoppingDistance = 0.2f;
+        var mp = g.AddComponent<MoradorPasseio>();
+        var pts = new Transform[pontos.Length];
+        for (int i = 0; i < pontos.Length; i++) { var p = new GameObject(nome + "_Ponto_" + (i + 1)).transform; p.SetParent(npcs); p.position = pontos[i]; pts[i] = p; }
+        mp.pontos = pts; mp.pausa = pausa;
+        mp.pernaE = pose.Find("PernaE"); mp.pernaD = pose.Find("PernaD"); mp.bracoE = pose.Find("BracoE"); mp.bracoD = pose.Find("BracoD");
+        var cv = g.AddComponent<Conversa>(); cv.falas = falas; cv.prompt = "E — conversar"; cv.range = 2.2f; cv.virarPara = g.transform; cv.duracao = 5f;
+        return mp;
+    }
+
     private static NpcRoute Ivo(Vector3[] pontos, float yaw, string[] falas)
     {
         var g = Boneco("Ivo", "ivo", pontos[0], yaw);
@@ -454,12 +526,21 @@ public static partial class ConstrutorNivel1
         Luz(luzes, "Luz_Margem", V(-6f, 2.5f, 20f), new Color(0.6f, 0.75f, 1f), 0.6f, 12f);
 
         // ---------- pedras de passagem sobre o rio ----------
-        var pedras = new[] { R(-3.2f, 36.2f, 0.4f, 39.6f), R(-0.6f, 41.6f, 3.2f, 45.2f), R(-3.4f, 47.4f, 0.2f, 51f), R(-1f, 53f, 3f, 56f) };
+        // pedras de passagem: as marcadas com musgo escuro afundam com o peso (passar sem parar)
+        var pedras = new[] { R(-3.2f, 36.2f, 0.4f, 39.2f), R(-0.4f, 40.8f, 2.6f, 43.4f), R(-3.2f, 45f, -0.2f, 47.6f), R(-0.2f, 49.2f, 2.8f, 51.8f), R(-2.8f, 53.4f, 0.4f, 56.2f) };
+        bool[] afunda = { false, true, false, true, false };
         for (int i = 0; i < pedras.Length; i++)
         {
-            PedraPassagem(i + 1, pedras[i]);
+            var bloco = PedraPassagem(i + 1, pedras[i]);
             var r = pedras[i];
-            SemSombra(ModeloAlvo("R02_Pedras_musgo_passagem_" + (i + 1), PH + "rock_moss_set_01/rock_moss_set_01_1k.fbx", V(r[0] - 0.25f, -1.15f, (r[1] + r[3]) / 2f), 70f * i, 1.4f, false, rochas, false));
+            var deco = ModeloAlvo("R02_Pedras_musgo_passagem_" + (i + 1), PH + "rock_moss_set_01/rock_moss_set_01_1k.fbx", V(r[0] - 0.25f, -1.15f, (r[1] + r[3]) / 2f), 70f * i, 1.4f, false, rochas, false);
+            SemSombra(deco);
+            if (!afunda[i]) continue;
+            bloco.name = "Pedra_Que_Afunda_" + (i + 1);
+            bloco.GetComponent<MeshRenderer>().sharedMaterial = MaterialPedraAfunda();
+            var pa = bloco.AddComponent<PedraQueAfunda>();
+            pa.som = Som(bloco, AUD + "tronco_aviso.wav");
+            deco.transform.SetParent(bloco.transform, true);
         }
         Fosso(perigos, armad, 1, Fossos[0], V(0f, 0f, 31.5f), false);
 
@@ -472,7 +553,6 @@ public static partial class ConstrutorNivel1
         for (int i = 0; i < 3; i++) Modelo("C10_Alambrado_ponte_" + (i + 1), PH + "modular_chainlink_fence/modular_chainlink_fence_1k.fbx", V(-14.2f, 0.47f, 64f + i * 2f), 90f, 1f, constr);
         Placa(ponte, "A05_Placa_perigo_ponte", V(-11f, 0.47f, 67.6f));
         Luz(luzes, "Luz_Bloqueio_Ponte", V(-12.5f, 2.6f, 66f), new Color(1f, 0.25f, 0.15f), 2.4f, 14f);
-        Galho(1, V(12f, 0f, 70f), true);
         Fosso(perigos, armad, 2, Fossos[1], V(19f, 0f, 70f), false);
         Fosso(perigos, armad, 3, Fossos[2], V(29f, 0f, 70f), false);
         Placa(cenario, "A05_Placa_perigo_2", V(19.6f, 0f, 73.4f));
@@ -482,8 +562,7 @@ public static partial class ConstrutorNivel1
         Ocupar(Caixa(locais, "N2-02_Comporta_Tampa", V(23f, -0.35f, 77f), V(1.9f, 1.4f, 0.12f), matTerminal));
         Caixa(locais, "N2-02_Comporta_Volante", V(23f, 1.25f, 77f), V(0.5f, 0.5f, 0.06f), matPerigo);
 
-        // ---------- D: pilão ----------
-        Pilao(perigos, cenario, armad, V(40f, 0f, 84f));
+        // ---------- D: margem alta (sem armadilha: respiro depois da travessia) ----------
         Modelo("T07_Postes_energia", PH + "modular_electricity_poles/modular_electricity_poles_1k.fbx", V(47.5f, 0f, 86f), 0f, 1f, tec);
 
         // ---------- E: estação de água (filtro, painel solar, reservatório) ----------
@@ -525,10 +604,8 @@ public static partial class ConstrutorNivel1
         Lanternas(new[] { new Vector2(0f, -8f), new Vector2(0f, 70f), new Vector2(40f, 70f), new Vector2(40f, 103f), new Vector2(70f, 103f) }, 4.75f);
         VagaLumes(new[] { V(-6.5f, 1.3f, 10f), V(6.5f, 1.3f, 24f), V(-6f, 1.3f, 46f), V(8f, 1.3f, 62f), V(18f, 1.3f, 77f), V(47f, 1.3f, 80f), V(33f, 1.3f, 92f), V(62f, 1.3f, 112f) });
         Gatilho(tutorial, "Dica_Residuos", V(0f, 1.5f, 3f), V(8f, 3f, 1.5f), "Resíduos na margem: chegue perto e use E para recolher (opcional).", 5f);
-        Gatilho(tutorial, "Dica_Pedras", V(0f, 1.5f, 30f), V(8f, 3f, 2f), "Pedras de passagem: salte de uma para a outra.\nCorrer (Shift) alonga o salto. Cair no rio custa um coração.", 6f);
-        Gatilho(tutorial, "Dica_Galho", V(8f, 1.5f, 70f), V(2f, 3f, 8f), "Galho baixo: Ctrl para deslizar.", 4f);
+        Gatilho(tutorial, "Dica_Pedras", V(0f, 1.5f, 30f), V(8f, 3f, 2f), "Pedras de passagem: salte de uma para a outra.\nAs pedras escuras afundam com o peso: não pare nelas.", 6f);
         Gatilho(tutorial, "Dica_Canais", V(17.5f, 1.5f, 70f), V(1.5f, 3f, 8f), "Dois canais seguidos: salte um, respire, salte o outro.", 4f);
-        Gatilho(tutorial, "Dica_Pilao", V(40f, 1.5f, 78f), V(8f, 3f, 1.5f), "Pilão: passe quando ele subir.", 4f);
         Gatilho(tutorial, "Chegada_Estacao", V(40f, 1.5f, 95.5f), V(8f, 3f, 1.5f), "Área segura: estação de água da margem. Use E no filtro.", 5f);
 
         CriarUICutscene();
@@ -573,7 +650,7 @@ public static partial class ConstrutorNivel1
 
         registrarOcupacao = false;
         Vegetacao(veg, new[] { -40f, -30f, 110f, 140f }, 400, 300);
-        Finalizar(scene, Ambiente.NoiteRio, V(0f, 0.05f, -3f), 0f,
+        Finalizar(scene, Ambiente.LuaCheia, V(0f, 0.05f, -3f), 0f,
             "Nível 2 — Margem ferida", "atravessar a margem e religar a estação de água", 1,
             "Destravar o filtro e ligar o painel solar", "", "Subir pela trilha até o terminal",
             "Nível 2 concluído", "A estação da margem voltou a funcionar. Agora, o corredor de caça.", false,
@@ -608,7 +685,6 @@ public static partial class ConstrutorNivel1
         Luz(luzes, "Luz_Tronco_1", V(0f, 4.2f, 20f), new Color(1f, 0.6f, 0.3f), 1.6f, 10f);
         Placa(cenario, "A05_Placa_perigo_1", V(2.7f, 0f, 27.5f));
         Fosso(perigos, armad, 1, Fossos[0], V(0f, 0f, 27f));
-        Galho(1, V(0f, 0f, 38f), false);
 
         // ---------- descanso ----------
         ModeloAlvo("C07_Fogueira", PH + "stone_fire_pit/stone_fire_pit_1k.fbx", V(-4.2f, 0f, 53.5f), 0f, 1.3f, false, constr);
@@ -628,12 +704,30 @@ public static partial class ConstrutorNivel1
         Luz(luzes, "Luz_Passarela", V(15f, 6f, 76.5f), new Color(0.85f, 0.95f, 1f), 1.4f, 12f);
         Luz(luzes, "Luz_Guarda_1", V(8.5f, 6.6f, 74.6f), new Color(1f, 0.85f, 0.7f), 1.6f, 5f);
         Luz(luzes, "Luz_Guarda_2", V(21f, 6.6f, 74.6f), new Color(1f, 0.85f, 0.7f), 1.6f, 5f);
-        Holofote(V(14.5f, 4.75f, 75f), 180f, 8f, 6f, 45f);
+        var holofote = Holofote(V(14.5f, 4.75f, 75f), 180f, 8f, 6f, 45f);
         Modelo("T02_Sensor_camera", PH + "security_camera_01/security_camera_01_1k.fbx", V(5f, 4.3f, 74.8f), 160f, 1.22f, tec);
-        var tg2 = TroncoGiratorio(perigos, armad, V(30f, 0f, 67f)); tg2.degreesPerSecond = 85f;
-        Luz(luzes, "Luz_Tronco_2", V(30f, 4.2f, 67f), new Color(1f, 0.6f, 0.3f), 1.6f, 10f);
         for (int i = 0; i < 5; i++) Modelo("C10_Alambrado_corredor_" + (i + 1), PH + "modular_chainlink_fence/modular_chainlink_fence_1k.fbx", V(27f + i * 2f, 0f, 72.2f), 0f, 1f, constr);
-        Pilao(perigos, cenario, armad, V(37f, 0f, 80f));
+        // furtividade: guardas com lanterna vigiam o corredor; o capim alto esconde o Nilo
+        var seguroE = new GameObject("Ponto_Seguro_Corredor").transform; seguroE.SetParent(perigos); seguroE.position = V(0f, 0f, 61f);
+        var seguroF = new GameObject("Ponto_Seguro_Subida").transform; seguroF.SetParent(perigos); seguroF.position = V(37f, 0f, 68f);
+        var g1 = GuardaVigia("Guarda_Patrulha_1", V(10.5f, 0f, 71.6f), 180f, seguroE, 9f); g1.giro = 60f; g1.periodo = 5.5f;
+        var g2 = GuardaVigia("Guarda_Patrulha_2", V(24f, 0f, 62.4f), 0f, seguroE, 9f); g2.giro = 55f; g2.periodo = 6.5f;
+        var g3 = GuardaVigia("Guarda_Patrulha_3", V(41.6f, 0f, 81f), 270f, seguroF, 9f); g3.giro = 50f; g3.periodo = 5f;
+        int nm = 0;
+        foreach (var c in new[] { V(4.5f, 0f, 67f), V(10.5f, 0f, 65.4f), V(16.5f, 0f, 68.4f), V(22.5f, 0f, 67f), V(28.5f, 0f, 65.6f), V(34f, 0f, 67.4f), V(37f, 0f, 76f), V(37.8f, 0f, 84f) })
+            MoitaCapim(++nm, c, V(2.8f, 0f, 2.6f));
+        // gerador do holofote: explodir apaga a varredura da passarela
+        var ger = new GameObject("T04_Gerador_Vigilia"); ger.transform.SetParent(tec); ger.transform.position = V(17f, 0f, 63.6f);
+        ModeloAlvo("T04_Gerador_Vigilia_Modelo", PH + "portable_generator/portable_generator_1k.fbx", V(17f, 0f, 63f), 0f, 0.9f, false, ger.transform, false);
+        var fumGer = Fumaca(ger.transform, V(17f, 0.9f, 63f), "Fumaca_Gerador", false);
+        var gerador = ger.AddComponent<Gerador>();
+        gerador.prompt = "E — forçar o gerador (apaga o holofote)"; gerador.range = 2f;
+        gerador.explosao = Explosao(ger.transform, V(17f, 0.6f, 63f), "Explosao_Gerador", 1f);
+        gerador.som = Som(ger, AUD + "explosao.wav");
+        gerador.desligarAoExplodir = new[] { holofote, GameObject.Find("Luzes/Luz_Passarela"), fumGer.gameObject };
+        gerador.ligarAoExplodir = new GameObject[0];
+        gerador.mensagem = "O gerador explodiu: o holofote da passarela apagou.\nOs guardas continuam de lanterna — use o capim alto.";
+        Ocupar(ger);
         Modelo("T07_Postes_energia", PH + "modular_electricity_poles/modular_electricity_poles_1k.fbx", V(44f, 0f, 78f), 0f, 1f, tec);
 
         // ---------- estação de resíduos e repetidor ----------
@@ -692,10 +786,10 @@ public static partial class ConstrutorNivel1
         VagaLumes(new[] { V(-5f, 1.3f, 14f), V(5f, 1.3f, 34f), V(-8f, 1.3f, 50f), V(10f, 1.3f, 62f), V(42f, 1.3f, 82f), V(48f, 1.3f, 106f) });
         Gatilho(tutorial, "Dica_Tronco", V(0f, 1.5f, 11f), V(6f, 3f, 1.5f), "Tronco giratório de ciclo lento: observe e passe logo depois dele.", 5f);
         Gatilho(tutorial, "Dica_Fosso", V(0f, 1.5f, 26.5f), V(6f, 3f, 1.5f), "Fosso curto com estacas: salte.", 3f);
-        Gatilho(tutorial, "Dica_Galho", V(0f, 1.5f, 35f), V(6f, 3f, 1.5f), "Galho baixo: Ctrl para deslizar.", 3f);
+        Gatilho(tutorial, "Dica_Guardas", V(0f, 1.5f, 60f), V(6f, 3f, 1.5f), "Guardas da Vigília com lanterna à frente.\nFique fora do cone de luz ou dentro do capim alto: lá eles não te veem.", 7f);
+        Gatilho(tutorial, "Dica_Gerador", V(13f, 1.5f, 67f), V(1.5f, 3f, 6f), "Um gerador alimenta o holofote da passarela. Force-o com E.", 5f);
         Gatilho(tutorial, "Dica_Descanso", V(0f, 1.5f, 45f), V(6f, 3f, 1.5f), "Ponto de descanso. Daqui em diante, a Vigília vigia o corredor.", 5f);
         Gatilho(tutorial, "Dica_Holofote", V(2f, 1.5f, 67f), V(1.5f, 3f, 6f), "Holofote da Vigília: se a luz pegar o Nilo, custa um coração.\nEspere a luz ir para o outro lado e passe.", 6f);
-        Gatilho(tutorial, "Dica_Tronco2", V(23.5f, 1.5f, 67f), V(1.5f, 3f, 6f), "Outro tronco, outro ritmo: este é mais rápido.", 4f);
         Gatilho(tutorial, "Chegada_Estacao", V(37f, 1.5f, 89f), V(6f, 3f, 1.5f), "Área segura: estação de retransmissão. Use E junto à lixeira.", 5f);
 
         CriarUICutscene();
@@ -759,7 +853,6 @@ public static partial class ConstrutorNivel1
         // ---------- trilha: galho, fosso, encosta instável, galho ----------
         ModeloAlvo("C07_Fogueira", PH + "stone_fire_pit/stone_fire_pit_1k.fbx", V(-2.4f, 0f, -6.5f), 0f, 1.3f, false, constr);
         Luz(luzes, "Luz_Fogueira", V(-2.4f, 1f, -6.5f), new Color(1f, 0.55f, 0.2f), 2.6f, 11f);
-        Galho(1, V(0f, 0f, 32f), false);
         Placa(cenario, "A05_Placa_perigo_1", V(3.4f, 0f, 37.5f));
         Fosso(perigos, armad, 1, Fossos[0], V(0f, 0f, 37f));
         Modelo("R08_Encosta", PH + "mountainside/mountainside_1k.fbx", V(-52f, 0f, 60f), 270f, 1.76f, rochas).transform.localScale = V(1.76f, 0.52f, 1.33f);
@@ -773,7 +866,6 @@ public static partial class ConstrutorNivel1
         enc.somAviso = Som(enc.poeira.gameObject, AUD + "tronco_aviso.wav");
         for (int i = 0; i < 6; i++) ModeloAlvo("R09_Cascalho_encosta_" + (i + 1), PH + "stone_01/stone_01_1k.fbx", V(-5.4f, 0f, 48f + i * 4.6f), 60f * i, 1.4f, false, rochas, false);
         Placa(cenario, "A05_Placa_perigo_2", V(3.4f, 0f, 46f));
-        Galho(2, V(0f, 0f, 78f), false);
 
         // ---------- posto: abrigo, bancada, barreira, carrinho, mapa ----------
         var loc = locais;
@@ -823,6 +915,32 @@ public static partial class ConstrutorNivel1
             "Barreira travada e bateria ligada.\nIVO: Com a barreira no lugar, dá para trabalhar aqui.\nNILO: A rota pela encosta está livre. Mara tem as referências.",
             "subir até a saída para a serra", new[] { fechados, ledB[1], cabo }, new[] { abertos, ledB[0] });
         UnityEventTools.AddVoidPersistentListener(estacao.onCompleted, ivo.IniciarRota);
+        Morador("Moradora_Lia", new[] { V(12f, 0f, 88f), V(13f, 0f, 104f), V(-1f, 0f, 100f), V(8f, 0f, 94f) }, 3f, new[] {
+            "LIA: Viemos para cá quando fecharam a travessia. Aqui tem sombra, água e gente.",
+            "LIA: O Ivo não dorme enquanto a encosta não estiver segura.",
+            "LIA: Se a antena falar, a gente avisa Várzea Alta pelo rádio do posto." });
+        Morador("Morador_Beto", new[] { V(-6f, 0f, 96f), V(2f, 0f, 87f), V(-2f, 0f, 106f) }, 4f, new[] {
+            "BETO: Essas mudas vão para a área de regeneração perto da antena.",
+            "BETO: Cuidado na serra: o vento lá em cima derruba quem pula sem olhar." });
+        // terreiro da aldeia: fogueira com bancos, segunda cabana, varal e cestos
+        Solido(ModeloAlvo("C07_Fogueira_terreiro", PH + "stone_fire_pit/stone_fire_pit_1k.fbx", V(2f, 0f, 97f), 0f, 1.6f, false, constr));
+        Luz(luzes, "Luz_Fogueira_Terreiro", V(2f, 1.1f, 97f), new Color(1f, 0.55f, 0.2f), 3f, 12f);
+        Fumaca(cenario, V(2f, 0.8f, 97f), "Fumaca_Fogueira_Terreiro", false);
+        for (int k = 0; k < 3; k++)
+        {
+            float ang = k * 120f + 30f; var pb = V(2f, 0f, 97f) + Quaternion.Euler(0f, ang, 0f) * V(0f, 0f, 2.6f);
+            Solido(ModeloAlvo("P05_Banco_terreiro_" + (k + 1), PH + "painted_wooden_bench/painted_wooden_bench_1k.fbx", pb, ang, 0.9f, true, apoio));
+        }
+        ModeloAlvo("C02_Cabana_selva_2", TGD + "CabanaSelva/JungleHut01.DAE", V(14f, 0f, 116f), 200f, 5.2f, false, constr);
+        Fumaca(cenario, V(14f, 5f, 115.6f), "Fumaca_Chamine_Cabana_2", true);
+        for (int k = -1; k <= 1; k += 2) Caixa(loc, "Varal_Poste", V(-12.5f, 1.1f, 98f + k * 2.5f), V(0.12f, 2.2f, 0.12f), matMadeira);
+        Caixa(loc, "Varal_Corda", V(-12.5f, 2.1f, 98f), V(0.03f, 0.03f, 5f), matEstaca);
+        for (int k = 0; k < 3; k++) Caixa(loc, "Varal_Pano", V(-12.5f, 1.75f, 96.6f + k * 1.3f), V(0.02f, 0.7f, 0.9f), matLenco);
+        for (int k = 0; k < 3; k++) Solido(ModeloAlvo("E08_Jardineira_terreiro_" + (k + 1), PH + "planter_box_01/planter_box_01_1k.fbx", V(-8f + k * 1.4f, 0f, 86.2f), 15f * k, 0.6f, false, apoio));
+        Fumaca(cenario, V(-2f, 5.2f, 113.4f), "Fumaca_Chamine_Cabana", true);
+        Fumaca(cenario, V(-2.4f, 0.6f, -6.5f), "Fumaca_Fogueira_Entrada", false);
+        Fumaca(cenario, V(-4f, 1.4f, 107.6f), "Fumaca_Oficina", true);
+        LuzArea(luzes, "Luz_Area_Abrigo_Ivo", V(-10f, 2.5f, 104.5f), new Vector2(3f, 2.4f), new Color(1f, 0.75f, 0.45f), 5f);
         var terminal = NovoTerminal(V(35.5f, 1.6f, 99f), 90f, "Ajude o Ivo a conter a encosta antes de seguir.", "E — usar o terminal de saída", true);
         Antena(V(60f, 0f, 132f));
         for (float t = 0f; t <= 1f; t += 0.05f) { var p = Vector3.Lerp(V(38f, 0f, 102f), V(58f, 0f, 129f), t); ocupados.Add(new Vector4(p.x, p.z, 4.5f, 0f)); }
@@ -833,10 +951,9 @@ public static partial class ConstrutorNivel1
         Sinais(new[] { V(-2.7f, 0f, 18f), V(2.7f, 0f, 75f) });
         Lanternas(new[] { new Vector2(0f, -8f), new Vector2(0f, 84f) }, 4.75f);
         VagaLumes(new[] { V(-6.5f, 1.3f, 12f), V(6.5f, 1.3f, 30f), V(6f, 1.3f, 60f), V(0f, 1.3f, 96f), V(14f, 1.3f, 100f), V(-12f, 1.3f, 100f) });
-        Gatilho(tutorial, "Dica_Galho", V(0f, 1.5f, 29f), V(8f, 3f, 1.5f), "Galho baixo: Ctrl para deslizar.", 3f);
         Gatilho(tutorial, "Dica_Fosso", V(0f, 1.5f, 36.5f), V(8f, 3f, 1.5f), "Fosso com estacas: salte.", 3f);
         Gatilho(tutorial, "Dica_Encosta", V(0f, 1.5f, 45.5f), V(8f, 3f, 1.5f), "Encosta instável: a poeira mostra onde a pedra vai cair.\nObserve e passe entre uma pedra e outra.", 6f);
-        Gatilho(tutorial, "Dica_Galho2", V(0f, 1.5f, 75.5f), V(8f, 3f, 1.5f), "Último galho antes do posto.", 3f);
+        Gatilho(tutorial, "Dica_Aldeia", V(0f, 1.5f, 80f), V(8f, 3f, 1.5f), "Posto das raízes: aqui ninguém te persegue.\nConverse com os moradores (E) e ajude o Ivo.", 6f);
         Gatilho(tutorial, "Dica_Degraus", V(17.2f, 1.5f, 99f), V(1.5f, 3f, 10f), "Degraus: Espaço para subir até a saída.", 4f);
 
         CriarUICutscene();
@@ -908,14 +1025,38 @@ public static partial class ConstrutorNivel1
         ModeloAlvo("R06_Paredao_inicio", PH + "rock_face_01/rock_face_01_1k.fbx", V(0f, 0f, -11f), 0f, 11f, false, rochas);
         Placa(cenario, "A05_Placa_perigo_1", V(3.4f, 0f, 17.5f));
         Fosso(perigos, armad, 1, Fossos[0], V(0f, 0f, 17f));
-        Galho(1, V(0f, 0f, 32f), false);
         Solido(ModeloAlvo("P05_Banco_mirante", PH + "painted_wooden_bench/painted_wooden_bench_1k.fbx", V(10f, 0f, 50.6f), 180f, 0.9f, true, apoio));
         PosteLampiao("C08_Lampiao_mirante", 13f, 49.5f, 2.4f);
-        var tg = TroncoGiratorio(perigos, armad, V(0f, 0f, 61f)); tg.degreesPerSecond = 80f;
-        Luz(luzes, "Luz_Tronco", V(0f, 4.2f, 61f), new Color(1f, 0.6f, 0.3f), 1.4f, 10f);
-        Placa(cenario, "A05_Placa_perigo_2", V(3.4f, 0f, 69.5f));
-        Fosso(perigos, armad, 2, Fossos[1], V(0f, 0f, 69f));
-        Galho(2, V(0f, 0f, 84f), false);
+        // subida da serra: plataformas de pedra cada vez mais altas, com rajadas de vento de lado
+        var subida = new GameObject("Subida_Serra").transform; subida.SetParent(terreno);
+        var plataformas = new[] { new[] { 0f, 53f, 55.5f, 3f, 0.9f }, new[] { 1.2f, 56.8f, 58.8f, 2.6f, 1.8f }, new[] { -0.8f, 60.2f, 62.2f, 2.4f, 2.6f },
+                                  new[] { 0.6f, 63.6f, 66f, 2.4f, 3.4f }, new[] { 0f, 67.2f, 71.6f, 3.2f, 3.4f } };
+        for (int i = 0; i < plataformas.Length; i++)
+        {
+            var q = plataformas[i];
+            Laje(subida, "Plataforma_Serra_" + (i + 1), V(q[0], q[4] / 2f, (q[1] + q[2]) / 2f), V(q[3], q[4], q[2] - q[1]), matRocha);
+        }
+        // chão da subida tomado por espinheiro: cair custa um coração e volta ao pé da subida
+        var pe = new GameObject("Subida_Retorno").transform; pe.SetParent(perigos); pe.position = V(0f, 0f, 50.5f);
+        var esp = new GameObject("Espinheiro_Subida"); esp.transform.SetParent(perigos); esp.transform.position = V(0f, 0.25f, 62.3f);
+        esp.layer = LayerMask.NameToLayer("Hazard"); esp.tag = "Hazard";
+        var ebc = esp.AddComponent<BoxCollider>(); ebc.isTrigger = true; ebc.size = V(8f, 0.5f, 19.4f);
+        var ehz = esp.AddComponent<Hazard>(); ehz.mode = Hazard.Mode.HitAndRespawn; ehz.respawnPoint = pe;
+        for (int i = 0; i < 14; i++)
+        {
+            var p = V(-3.2f + (i % 4) * 2.1f, 0f, 53f + i * 1.35f);
+            SemSombra(Modelo("V20_Galhos_secos_espinheiro_" + (i + 1), PH + "dry_branches_medium_01/dry_branches_medium_01_1k.fbx", p, 47f * i, 1.1f, armad));
+        }
+        var ventoGo = new GameObject("Vento_Serra"); ventoGo.transform.SetParent(perigos); ventoGo.transform.position = V(0f, 3f, 62f);
+        ventoGo.layer = LayerMask.NameToLayer("Ignore Raycast");
+        var vbc = ventoGo.AddComponent<BoxCollider>(); vbc.isTrigger = true; vbc.size = V(8f, 8f, 20f);
+        var vento = ventoGo.AddComponent<Vento>(); vento.direcao = Vector3.right; vento.forca = 10f; vento.intervalo = 4.2f; vento.duracao = 1.5f; vento.aviso = 0.8f;
+        vento.poeira = Poeira(ventoGo.transform, V(-4.5f, 2.5f, 62f), "Poeira_Vento", new Color(0.85f, 0.75f, 0.62f, 0.8f));
+        var pvs = vento.poeira.shape; pvs.shapeType = ParticleSystemShapeType.Box; pvs.scale = V(0.5f, 4f, 18f);
+        var pvv = vento.poeira.velocityOverLifetime; pvv.enabled = true; pvv.x = new ParticleSystem.MinMaxCurve(8f, 12f); pvv.y = new ParticleSystem.MinMaxCurve(0f, 0f); pvv.z = new ParticleSystem.MinMaxCurve(0f, 0f);
+        vento.som = Som(ventoGo, AUD + "deslize.wav");
+        Placa(cenario, "A05_Placa_perigo_2", V(3.4f, 0f, 51f));
+        Fosso(perigos, armad, 2, Fossos[1], V(0f, 3.5f, 69.5f));
 
         // ---------- área de regeneração (oeste) com a entrada indevida ----------
         var est = RaizEstacao();
@@ -952,6 +1093,12 @@ public static partial class ConstrutorNivel1
         sentinela.raioAcordar = 0f;
         sentinela.objetivoDepois = "instalar o módulo na antena";
         sentinela.mensagemFim = "MARA (rádio): A sentinela parou e o portão abriu. Instale o módulo na antena.";
+        var expSent = Explosao(chefe, sentinela.transform.position + Vector3.up * 1.2f, "Explosao_Sentinela", 1.4f);
+        foreach (var ps in expSent.transform.parent.GetComponentsInChildren<ParticleSystem>(true)) { var mm = ps.main; mm.playOnAwake = true; }
+        var somExp = Som(expSent.transform.parent.gameObject, AUD + "explosao.wav"); somExp.playOnAwake = true;
+        expSent.transform.parent.gameObject.SetActive(false);
+        var ativ = new List<GameObject>(sentinela.ativarAoDesligar ?? new GameObject[0]) { expSent.transform.parent.gameObject };
+        sentinela.ativarAoDesligar = ativ.ToArray();
         var cantos = new[] { V(4.5f, 0f, 91f), V(21.5f, 0f, 91f), V(21.5f, 0f, 119f) };
         for (int i = 0; i < cantos.Length; i++)
         {
@@ -990,10 +1137,9 @@ public static partial class ConstrutorNivel1
         Marcas(new[] { V(2.6f, 0f, 28f), V(-2.6f, 0f, 53.4f), V(2.6f, 0f, 88f) });
         Lanternas(new[] { new Vector2(0f, -8f), new Vector2(0f, 90f) }, 4.75f);
         Gatilho(tutorial, "Dica_Fosso", V(0f, 1.5f, 15f), V(8f, 3f, 1.5f), "O caminho junta tudo o que você já sabe. Fosso: salte.", 4f);
-        Gatilho(tutorial, "Dica_Galho", V(0f, 1.5f, 29f), V(8f, 3f, 1.5f), "Galho baixo: deslize.", 3f);
         Gatilho(tutorial, "Dica_Mirante", V(0f, 1.5f, 41.5f), V(8f, 3f, 1.5f), "Mirante: dá para ver o vale inteiro daqui. Respire.", 4f);
-        Gatilho(tutorial, "Dica_Tronco", V(0f, 1.5f, 54.5f), V(8f, 3f, 1.5f), "Tronco giratório: espere ele passar.", 3f);
-        Gatilho(tutorial, "Dica_Fosso2", V(0f, 1.5f, 68.5f), V(8f, 3f, 1.5f), "Fosso: salte.", 3f);
+        Gatilho(tutorial, "Dica_Subida", V(0f, 1.5f, 51.5f), V(8f, 3f, 1.5f), "Subida da serra: salte de pedra em pedra.\nQuando a poeira levantar, vem rajada de vento: espere no chão.", 6f);
+        Gatilho(tutorial, "Dica_Fosso2", V(0f, 4.9f, 70.5f), V(8f, 3f, 1.5f), "Do alto, salte o fosso correndo.", 3f);
         Gatilho(tutorial, "Dica_Regeneracao", V(0f, 1.5f, 91f), V(8f, 3f, 1.5f), "Área de regeneração: a cerca tem uma entrada aberta pela Vigília.\nFeche com E.", 6f);
 
         CriarUICutscene();

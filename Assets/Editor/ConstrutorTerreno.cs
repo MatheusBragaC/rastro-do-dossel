@@ -248,7 +248,14 @@ public static partial class ConstrutorNivel1
         w[7] = 0.2f + 0.6f * S01((d - 2.5f) / 4f);                                                              // L08 folhas caídas
         w[8] = 1.1f * mancha(8, 0.47f) * S01((inc - 6f) / 8f) * (1f - S01((inc - 32f) / 8f)) + 0.6f * rocha * mancha(18, 0.4f); // L09 solo com musgo
         w[9] = 2.6f * rec + 0.45f * mancha(9, 0.76f) * perto;                                                     // L10 solo em recuperação
-        if (d <= 0f)   // o caminho: terra batida e cascalho, com um pouco de folha nas beiras
+        bool praca = false;   // retângulos largos (praças do posto e das arenas) viram terreiro de terra batida
+        if (d <= 0f) foreach (var r in Trilha) if (x > r[0] && x < r[2] && z > r[1] && z < r[3] && Mathf.Min(r[2] - r[0], r[3] - r[1]) >= 20f) praca = true;
+        if (d <= 0f && praca)
+        {
+            w[0] += 1.6f + 0.5f * fino; w[1] += 0.5f; w[4] += 0.4f * mancha(14, 0.5f);
+            w[5] *= 0.2f; w[6] *= 0.1f; w[7] *= 0.3f; w[8] *= 0.15f; w[9] *= 0.5f;
+        }
+        else if (d <= 0f)   // o caminho: terra batida e cascalho, com um pouco de folha nas beiras
         {
             w[0] += 0.5f; w[4] += 1.9f + 0.6f * fino;
             w[5] *= 0.2f; w[6] *= 0.05f; w[7] *= 0.25f; w[8] *= 0.15f; w[9] *= 0.3f;

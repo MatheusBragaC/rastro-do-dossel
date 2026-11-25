@@ -538,6 +538,19 @@ public static partial class ConstrutorNivel1
         }
     }
 
+    // Pedra que afunda (nível 2): a mesma rocha, escurecida e esverdeada de musgo molhado — a pista para o jogador.
+    private static Material MaterialPedraAfunda()
+    {
+        string path = "Assets/Materials/PedraAfunda.mat";
+        var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m != null) return m;
+        m = new Material(AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Rocha.mat"));
+        m.SetColor("_BaseColor", new Color(0.28f, 0.36f, 0.24f));
+        m.SetFloat("_Smoothness", 0.55f);
+        AssetDatabase.CreateAsset(m, path);
+        return m;
+    }
+
     private static Light LuzArea(Transform pai, string nome, Vector3 pos, Vector2 tam, Color cor, float intensidade)
     {
         var g = new GameObject(nome); g.transform.SetParent(pai); g.transform.position = pos; g.transform.rotation = Quaternion.Euler(90f, 0f, 0f);

@@ -109,9 +109,10 @@ public class PlayerController : MonoBehaviour
     /// Entradas: nenhuma. Retorno: void.
     /// Corpo: consulta o chão, processa o deslize, define a velocidade horizontal do Rigidbody
     /// (exceto durante o empurrão de dano, em que a física segue livre) e consome o pedido de
-    /// salto válido. Não há física no Update.
+    /// salto válido. Com o corpo congelado (tela de falha) não faz nada. Não há física no Update.
     void FixedUpdate()
     {
+        if (playerRb.isKinematic) return;
         IsGrounded = CheckGround();
         if (IsGrounded) lastGroundedTime = Time.time;
 

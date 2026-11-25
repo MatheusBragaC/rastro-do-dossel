@@ -460,6 +460,9 @@ public static partial class ConstrutorNivel1
         public static readonly Ambiente NoiteRio = new Ambiente { solRot = new Vector3(32f, 160f, 0f), sol = new Color(0.7f, 0.8f, 1f), solInt = 1.0f,
             ambiente = new Color(0.31f, 0.38f, 0.5f), nevoa = new Color(0.1f, 0.16f, 0.22f), nevoaIni = 14f, nevoaFim = 70f, fundo = new Color(0.08f, 0.13f, 0.21f),
             filtro = new Color(0.9f, 0.98f, 1f), exposicao = 0.15f };
+        public static readonly Ambiente LuaCheia = new Ambiente { solRot = new Vector3(42f, 140f, 0f), sol = new Color(0.82f, 0.88f, 1f), solInt = 1.55f,
+            ambiente = new Color(0.4f, 0.47f, 0.6f), nevoa = new Color(0.16f, 0.22f, 0.32f), nevoaIni = 25f, nevoaFim = 110f, fundo = new Color(0.12f, 0.18f, 0.3f),
+            filtro = new Color(0.9f, 0.97f, 1f), exposicao = 0.25f };
         public static readonly Ambiente Ravina = new Ambiente { solRot = new Vector3(50f, 200f, 0f), sol = new Color(0.66f, 0.7f, 0.95f), solInt = 0.8f,
             ambiente = new Color(0.27f, 0.29f, 0.4f), nevoa = new Color(0.09f, 0.08f, 0.13f), nevoaIni = 12f, nevoaFim = 60f, fundo = new Color(0.06f, 0.06f, 0.12f),
             filtro = new Color(1f, 0.94f, 0.96f), exposicao = 0.2f };
