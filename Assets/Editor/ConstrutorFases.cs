@@ -543,6 +543,19 @@ public static partial class ConstrutorNivel1
             deco.transform.SetParent(bloco.transform, true);
         }
         Fosso(perigos, armad, 1, Fossos[0], V(0f, 0f, 31.5f), false);
+        // cheia: ao pisar na primeira pedra, a comporta rompe e a água do fosso sobe acima das pedras em 15 s
+        var cheiaGo = new GameObject("Cheia_Travessia"); cheiaGo.transform.SetParent(perigos); cheiaGo.transform.position = V(0f, -0.5f, 46f);
+        cheiaGo.AddComponent<Rigidbody>().isKinematic = true;
+        GameObject.Find("Terreno/Agua_Fosso_1").transform.SetParent(cheiaGo.transform, true);
+        var cheiaRet = new GameObject("Cheia_Retorno").transform; cheiaRet.SetParent(perigos); cheiaRet.position = V(0f, 0f, 31.5f);
+        var cheiaPz = new GameObject("Cheia_Perigo"); cheiaPz.transform.SetParent(cheiaGo.transform, false); cheiaPz.transform.localPosition = V(0f, -0.3f, 0f);
+        cheiaPz.layer = LayerMask.NameToLayer("Hazard"); cheiaPz.tag = "Hazard";
+        var cbx = cheiaPz.AddComponent<BoxCollider>(); cbx.isTrigger = true; cbx.size = V(8f, 0.6f, 24f);
+        var chz = cheiaPz.AddComponent<Hazard>(); chz.mode = Hazard.Mode.HitAndRespawn; chz.respawnPoint = cheiaRet;
+        var cheia = cheiaGo.AddComponent<Cheia>();
+        cheia.largada = new Bounds(V(0f, 0.5f, 37.7f), V(8f, 3f, 3.4f));
+        cheia.espuma = Poeira(perigos, V(0f, 0.2f, 57.4f), "Espuma_Cheia", new Color(0.85f, 0.92f, 1f, 0.9f));
+        cheia.som = Som(cheiaGo, AUD + "tronco_aviso.wav"); cheia.som.spatialBlend = 0f;
 
         // ---------- B/C: bloqueio à vista, galho baixo e dois canais ----------
         var ponte = new GameObject("Travessia_Principal").transform; ponte.SetParent(cenario);
@@ -716,6 +729,20 @@ public static partial class ConstrutorNivel1
         int nm = 0;
         foreach (var c in new[] { V(4.5f, 0f, 67f), V(10.5f, 0f, 65.4f), V(16.5f, 0f, 68.4f), V(22.5f, 0f, 67f), V(28.5f, 0f, 65.6f), V(34f, 0f, 67.4f), V(37f, 0f, 76f), V(37.8f, 0f, 84f) })
             MoitaCapim(++nm, c, V(2.8f, 0f, 2.6f));
+        // Dona Rita: moradora encurralada no capim; o Nilo a chama de moita em moita (tarefa opcional)
+        var moitasRita = new[] { V(4.5f, 0f, 67f), V(10.5f, 0f, 65.4f), V(16.5f, 0f, 68.4f), V(22.5f, 0f, 67f), V(28.5f, 0f, 65.6f), V(34f, 0f, 67.4f), V(37f, 0f, 76f), V(37.8f, 0f, 84f) };
+        var rita = Boneco("Dona_Rita", "ivo", moitasRita[0], 90f);
+        rita.tag = "Interactable"; rita.transform.localScale = Vector3.one * 0.88f;
+        var esc = rita.AddComponent<Escoltado>(); esc.prompt = "E — chamar a Dona Rita para a próxima moita"; esc.range = 2.6f;
+        var ptsRita = new Transform[moitasRita.Length];
+        for (int i = 0; i < moitasRita.Length; i++) { var p = new GameObject("Dona_Rita_Moita_" + (i + 1)).transform; p.SetParent(npcs); p.position = moitasRita[i]; ptsRita[i] = p; }
+        esc.pontos = ptsRita;
+        var poseRita = rita.transform.Find("Pose"); esc.pernaE = poseRita.Find("PernaE"); esc.pernaD = poseRita.Find("PernaD");
+        var tarefaRita = rita.AddComponent<Coletavel>(); tarefaRita.tipo = "Escolta"; tarefaRita.range = 0f; tarefaRita.prompt = "";
+        tarefaRita.ativarAoColetar = new GameObject[0]; tarefaRita.desativarAoColetar = new GameObject[0];
+        esc.tarefa = tarefaRita;
+        Gatilho(tutorial, "Dica_Dona_Rita", V(2f, 1.5f, 63.5f), V(4f, 3f, 1.5f),
+            "DONA RITA (do capim): Psiu! Sabiá! Eu voltei pra casa e fiquei presa aqui.\nFique perto dela e chame com E quando os guardas olharem para o outro lado.", 7f);
         CriarUICutscene();   // antes do gerador: a reação em cadeia é uma cutscene
         // gerador do holofote: explodir apaga a varredura da passarela
         var ger = new GameObject("T04_Gerador_Vigilia"); ger.transform.SetParent(tec); ger.transform.position = V(17f, 0f, 63.6f);
@@ -942,6 +969,35 @@ public static partial class ConstrutorNivel1
         Morador("Morador_Beto", new[] { V(-6f, 0f, 96f), V(2f, 0f, 87f), V(-2f, 0f, 106f) }, 4f, new[] {
             "BETO: Essas mudas vão para a área de regeneração perto da antena.",
             "BETO: Cuidado na serra: o vento lá em cima derruba quem pula sem olhar." });
+        // defesa do terreiro: depois da barreira, a encosta desce de vez; o Nilo acende 4 tochas para guiar os moradores ao abrigo
+        var defesa = new GameObject("Defesa_Terreiro").AddComponent<DefesaTerreiro>(); defesa.transform.SetParent(perigos);
+        var tochas = new List<Coletavel>();
+        foreach (var tp in new[] { V(-6.5f, 0f, 91.5f), V(9f, 0f, 95.5f), V(-4f, 0f, 101f), V(13.5f, 0f, 103f) })
+        {
+            int n = tochas.Count + 1;
+            var raizT = new GameObject("Tocha_Terreiro_" + n); raizT.transform.SetParent(perigos); raizT.transform.position = tp;
+            Caixa(raizT.transform, "Tocha_Poste", tp + V(0f, 0.9f, 0f), V(0.14f, 1.8f, 0.14f), matMadeira);
+            Caixa(raizT.transform, "Tocha_Cesto", tp + V(0f, 1.86f, 0f), V(0.34f, 0.2f, 0.34f), matEstaca);
+            var fogo = new GameObject("Tocha_Fogo"); fogo.transform.SetParent(raizT.transform); fogo.transform.position = tp + V(0f, 2f, 0f);
+            Caixa(fogo.transform, "Tocha_Brasa", tp + V(0f, 2.02f, 0f), V(0.24f, 0.14f, 0.24f), matLedVermelho);
+            Luz(fogo.transform, "Luz_Tocha_" + n, tp + V(0f, 2.3f, 0f), new Color(1f, 0.55f, 0.2f), 2.4f, 9f);
+            Fumaca(fogo.transform, tp + V(0f, 2.1f, 0f), "Chama_Tocha_" + n, false);
+            fogo.SetActive(false);
+            var ct = raizT.AddComponent<Coletavel>(); ct.tipo = "Tochas"; ct.prompt = "E — acender a tocha"; ct.range = 1.9f; ct.mensagem = "Tocha acesa.";
+            ct.ativarAoColetar = new[] { fogo }; ct.desativarAoColetar = new GameObject[0];
+            ct.som = AssetDatabase.LoadAssetAtPath<AudioClip>(AUD + "estacao_ok.wav");
+            raizT.SetActive(false);
+            tochas.Add(ct);
+        }
+        var enc2Go = new GameObject("Encosta_Terreiro"); enc2Go.transform.SetParent(perigos);
+        var enc2 = enc2Go.AddComponent<EncostaInstavel>();
+        enc2.rochas = PrefabsRochas(); enc2.inicio = V(-11.4f, 2.6f, 87.5f); enc2.fim = V(-11.4f, 2.6f, 101.5f);
+        enc2.impulso = V(7.5f, 0f, 0f); enc2.intervalo = 1.5f; enc2.aviso = 0.8f; enc2.vida = 5f;
+        enc2.poeira = Poeira(enc2Go.transform, enc2.inicio, "Poeira_Encosta_Terreiro", new Color(0.7f, 0.62f, 0.5f, 0.85f));
+        enc2.somAviso = Som(enc2.poeira.gameObject, AUD + "tronco_aviso.wav");
+        enc2Go.SetActive(false);
+        defesa.tochas = tochas.ToArray(); defesa.encosta = enc2Go;
+        UnityEventTools.AddVoidPersistentListener(estacao.onCompleted, defesa.Iniciar);
         // terreiro da aldeia: fogueira com bancos, segunda cabana, varal e cestos
         Solido(ModeloAlvo("C07_Fogueira_terreiro", PH + "stone_fire_pit/stone_fire_pit_1k.fbx", V(2f, 0f, 97f), 0f, 1.6f, false, constr));
         Luz(luzes, "Luz_Fogueira_Terreiro", V(2f, 1.1f, 97f), new Color(1f, 0.55f, 0.2f), 3f, 12f);

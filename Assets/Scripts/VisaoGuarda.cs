@@ -40,16 +40,19 @@ public class VisaoGuarda : MonoBehaviour
         if (Ve(nilo.position + Vector3.up)) Flagrante(gm);
     }
 
-    /// Finalidade: dizer se um ponto está à vista do guarda.
-    /// Entrada: ponto no mundo. Retorno: bool. Corpo: alcance, ângulo do cone, moita e linha de visão sem obstáculo.
-    public bool Ve(Vector3 ponto)
+    /// Finalidade: dizer se o Nilo, nesse ponto, está à vista do guarda.
+    /// Entrada: ponto no mundo. Retorno: bool. Corpo: escondido na moita nunca é visto; senão, VeAlvo.
+    public bool Ve(Vector3 ponto) { return !Moita.NiloEscondido && VeAlvo(ponto); }
+
+    /// Finalidade: dizer se um ponto qualquer está à vista do guarda (também usado para a moradora do nível 3).
+    /// Entrada: ponto no mundo. Retorno: bool. Corpo: alcance, ângulo do cone e linha de visão sem obstáculo.
+    public bool VeAlvo(Vector3 ponto)
     {
         Vector3 origem = olho != null ? olho.position : transform.position + Vector3.up * 1.6f;
         Vector3 d = ponto - origem;
         if (d.magnitude > alcance) return false;
         Vector3 frente = transform.forward; frente.y = 0f; Vector3 dh = d; dh.y = 0f;
         if (Vector3.Angle(frente, dh) > anguloMeio) return false;
-        if (Moita.NiloEscondido) return false;
         RaycastHit hit;
         if (Physics.Raycast(origem, d.normalized, out hit, d.magnitude - 0.3f, obstaculos, QueryTriggerInteraction.Ignore)
             && !hit.collider.CompareTag("Player")) return false;
@@ -58,7 +61,7 @@ public class VisaoGuarda : MonoBehaviour
 
     /// Finalidade: reagir ao Nilo visto. Entrada: GameManager. Retorno: void.
     /// Corpo: lanterna vermelha, grito e fala; tira um coração e devolve ao ponto seguro.
-    private void Flagrante(GameManager gm)
+    public void Flagrante(GameManager gm)
     {
         espera = 2f;
         if (lanterna != null) lanterna.color = new Color(1f, 0.2f, 0.15f);

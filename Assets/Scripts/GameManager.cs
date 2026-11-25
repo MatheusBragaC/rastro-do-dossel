@@ -380,6 +380,8 @@ public class GameManager : MonoBehaviour
             case "Sinais": return "Recolocar sinais";
             case "Resíduos": return "Recolher resíduos";
             case "Marcas": return "Deixar marcas novas";
+            case "Tochas": return "Acender as tochas do terreiro";
+            case "Escolta": return "Escoltar a Dona Rita pelo capim";
             default: return tipo;
         }
     }

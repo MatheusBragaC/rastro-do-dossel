@@ -193,6 +193,20 @@ public static partial class ConstrutorNivel1
     {
         Galho(1, new Vector3(12f, 0f, 56f), true);
         Galho(2, new Vector3(19f, 0f, 56f), true);
+        // tora desgovernada: solta ao entrar no corredor, rola atrás do Nilo, passa sob as barreiras e se espatifa antes do tronco giratório
+        var tora = new GameObject("Tora_Desgovernada"); tora.transform.SetParent(perigos); tora.transform.position = new Vector3(-3.3f, 0.45f, 56f);
+        tora.layer = LayerMask.NameToLayer("Hazard"); tora.tag = "Hazard";
+        tora.AddComponent<Rigidbody>();
+        var tbc = tora.AddComponent<BoxCollider>(); tbc.isTrigger = true; tbc.size = new Vector3(0.9f, 0.9f, 7.4f);
+        tora.AddComponent<Hazard>().mode = Hazard.Mode.Hit;
+        var rol = tora.AddComponent<Rolante>(); rol.fim = new Vector3(27f, 0.45f, 56f); rol.velocidade = 4.6f; rol.raio = 0.45f;
+        rol.visual = Cilindro(tora.transform, "Tora_Visual", tora.transform.position, new Vector3(0.9f, 3.7f, 0.9f), Quaternion.Euler(90f, 0f, 0f), matTronco).transform;
+        rol.somRolar = Som(tora, AUD + "deslize.wav"); rol.somRolar.loop = true;
+        rol.somFim = Som(tora, AUD + "caixa.wav");
+        rol.poeiraFim = Poeira(perigos, rol.fim, "Poeira_Tora", new Color(0.55f, 0.45f, 0.32f, 0.9f));
+        var gTora = Gatilho(tutorial, "Gatilho_Tora", new Vector3(2.5f, 1.5f, 56f), new Vector3(1.5f, 3f, 8f),
+            "Uma tora se soltou atrás de você! Corra (Shift), deslize sob os galhos (Ctrl) ou salte a tora.", 4f);
+        UnityEditor.Events.UnityEventTools.AddPersistentListener(gTora.GetComponent<TutorialTrigger>().onEnter, rol.Soltar);
         TroncoGiratorio(perigos, armad, new Vector3(32f, 0f, 56f));
         Luz(luzes, "Luz_Tronco", new Vector3(32f, 4.2f, 56f), new Color(1f, 0.6f, 0.3f), 1.8f, 10f);
         ModeloAlvo("R03_Pedras_musgo_2", PH + "rock_moss_set_02/rock_moss_set_02_1k.fbx", new Vector3(24f, 0f, 63.5f), 0f, 3.4f, false, rochas);
