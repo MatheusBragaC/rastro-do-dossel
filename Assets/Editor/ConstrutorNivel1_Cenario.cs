@@ -692,11 +692,27 @@ public static partial class ConstrutorNivel1
             K(0f, 4.6f, -4.2f,    0f, 1.0f, 20f,   3.5f),
         }, new[] {
             F(0.3f, 4.4f, "RASTRO DO DOSSEL\n<size=40>Nível 1 — Trilha encoberta</size>", true),
-            F(1.2f, 5.2f, "<color=#9FE0FF>MARA (rádio):</color> A travessia fecha ao amanhecer. Leve o módulo até a antena."),
-            F(5.3f, 8.4f, "<color=#9FE0FF>MARA:</color> Eu acompanho enquanto houver sinal."),
+            F(1.2f, 2.9f, "<color=#9FE0FF>MARA (rádio):</color> Sabiá... tem gente da Vigília no repetidor!"),
+            F(3.0f, 5.2f, "<color=#9FE0FF>MARA:</color> Derrubaram! Sem o repetidor, o vale não escuta a gente."),
+            F(5.3f, 8.4f, "<color=#9FE0FF>MARA:</color> Só resta a antena da serra. Leve o módulo até lá antes do amanhecer."),
             F(8.5f, 12.6f, "<color=#FFC46B>NILO:</color> Conheço o começo da trilha. Vou avisando."),
         });
         abertura.tocarAoIniciar = true;
+        // repetidor de Várzea Alta: a Vigília explode a base e a torre tomba durante a primeira tomada
+        var torre = new GameObject("Repetidor_Varzea_Alta").transform; torre.position = new Vector3(-9f, 0f, -15f);
+        for (int k = 0; k < 4; k++)
+            Caixa(torre, "Repetidor_Perna", torre.position + new Vector3(k % 2 == 0 ? -0.7f : 0.7f, 4.5f, k < 2 ? -0.7f : 0.7f), new Vector3(0.14f, 9f, 0.14f), matTerminal);
+        for (int k = 1; k <= 4; k++) Caixa(torre, "Repetidor_Travessa", torre.position + Vector3.up * (k * 2f), new Vector3(1.5f, 0.1f, 1.5f), matTerminal);
+        Caixa(torre, "Repetidor_Antena", torre.position + Vector3.up * 9.6f, new Vector3(0.08f, 1.6f, 0.08f), matTerminal);
+        var ledTorre = Caixa(torre, "Repetidor_Luz", torre.position + Vector3.up * 10.4f, new Vector3(0.3f, 0.3f, 0.3f), matLedVermelho);
+        var luzTorre = Luz(torre, "Luz_Repetidor", torre.position + Vector3.up * 10.4f, new Color(1f, 0.15f, 0.1f), 2f, 10f);
+        Ocupar(torre.gameObject);
+        var evA = new List<Cutscene.Evento>(); var trA = new List<Cutscene.Tremor>();
+        ExplosaoCena(evA, trA, cenario, torre.position + Vector3.up * 0.8f, "Explosao_Repetidor", 1.8f, 2.6f);
+        var fumT = Fumaca(cenario, torre.position + Vector3.up * 0.5f, "Fumaca_Repetidor", false); fumT.gameObject.SetActive(false);
+        evA.Add(new Cutscene.Evento { tempo = 2.8f, ligar = new[] { fumT.gameObject }, desligar = new[] { luzTorre.gameObject, ledTorre } });
+        abertura.eventos = evA.ToArray(); abertura.tremores = trA.ToArray();
+        abertura.movimentos = new[] { new Cutscene.Movimento { alvo = torre, posicao = torre.position, rotacao = new Vector3(0f, 0f, 84f), inicio = 2.9f, duracao = 1.5f, acelerar = true } };
 
         // 2) sentinela: aproximação baixa, volta pelo alto e plano aberto da arena
         var sentinela = GameObject.Find("Chefe/Sentinela").GetComponent<SentinelaChefe>();
@@ -711,6 +727,7 @@ public static partial class ConstrutorNivel1
             F(7.3f, 10.6f, "<color=#9FE0FF>MARA:</color> Quando ela bater e travar, tire as baterias das costas com E."),
         });
         UnityEditor.Events.UnityEventTools.AddPersistentListener(cenaChefe.aoComecar, sentinela.Acordar);
+        CenaSentinelaExplode(sentinela, "Sentinela_Explode");
         var entrada = Gatilho(tutorial, "Entrada_Arena", new Vector3(77.5f, 1.5f, 98f), new Vector3(2f, 3f, 12f), "", 0f);
         UnityEditor.Events.UnityEventTools.AddPersistentListener(entrada.GetComponent<TutorialTrigger>().onEnter, cenaChefe.TocarCena);
 

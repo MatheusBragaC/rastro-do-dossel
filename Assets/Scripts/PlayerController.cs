@@ -49,6 +49,7 @@ public class PlayerController : MonoBehaviour
     private float lastGroundedTime = float.NegativeInfinity;
     private float slideTimer;
     private float knockbackTimer;
+    private float lastJumpTime = float.NegativeInfinity;
 
     /// Finalidade: obter componentes e guardar as dimensões originais do colisor.
     /// Entradas: nenhuma. Retorno: void.
@@ -144,14 +145,14 @@ public class PlayerController : MonoBehaviour
     /// Entradas: nenhuma (usa posição, raio da cápsula e groundMask). Retorno: bool.
     /// Corpo: lança uma esfera curta para baixo a partir da base da cápsula e aceita
     /// apenas superfícies quase horizontais, para que encostar de lado numa parede
-    /// não conte como chão. Subindo (após o salto) também não conta.
+    /// não conte como chão. Só logo após o salto a subida deixa de contar (rampa e emenda de piso continuam chão).
     public bool CheckGround()
     {
-        if (playerRb.linearVelocity.y > 0.1f) return false;
+        if (Time.time - lastJumpTime < 0.2f && playerRb.linearVelocity.y > 0.1f) return false;
         float r = capsule.radius * 0.9f;
         Vector3 origin = transform.position + Vector3.up * (capsule.radius + 0.05f);
         RaycastHit hit;
-        if (!Physics.SphereCast(origin, r, Vector3.down, out hit, capsule.radius - r + 0.15f, groundMask, QueryTriggerInteraction.Ignore))
+        if (!Physics.SphereCast(origin, r, Vector3.down, out hit, capsule.radius - r + 0.25f, groundMask, QueryTriggerInteraction.Ignore))
             return false;
         return hit.normal.y > 0.7f;
     }
@@ -166,6 +167,7 @@ public class PlayerController : MonoBehaviour
         if (!controlEnabled || IsCrouched || Time.time - lastGroundedTime > coyoteTime) return false;
         jumpRequestTime = float.NegativeInfinity;
         lastGroundedTime = float.NegativeInfinity;
+        lastJumpTime = Time.time;
         var v = playerRb.linearVelocity;
         v.y = 0f;
         playerRb.linearVelocity = v;
@@ -207,6 +209,7 @@ public class PlayerController : MonoBehaviour
     /// controle horizontal por knockbackTime, para o impacto ser percebido.
     public void Knockback(Vector3 direction)
     {
+        if (playerRb.isKinematic) return;   // montado na moto: quem leva o tranco é a moto
         direction.y = 0f;
         if (direction.sqrMagnitude < 0.001f) direction = -Facing;
         IsSliding = false;

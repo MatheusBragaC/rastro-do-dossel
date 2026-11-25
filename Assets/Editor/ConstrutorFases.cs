@@ -25,7 +25,7 @@ public static partial class ConstrutorNivel1
     public static void MontarTodas()
     {
         MateriaisComTextura();
-        Montar(); MontarN2(); MontarN3(); MontarN4(); MontarN5();
+        Montar(); MontarN2(); MontarN3(); MontarN4(); MontarN4b(); MontarN5();
         ConfigurarBuild();
         ConfigurarMenuFases();
         EditorSceneManager.OpenScene(ScenePath);
@@ -716,17 +716,38 @@ public static partial class ConstrutorNivel1
         int nm = 0;
         foreach (var c in new[] { V(4.5f, 0f, 67f), V(10.5f, 0f, 65.4f), V(16.5f, 0f, 68.4f), V(22.5f, 0f, 67f), V(28.5f, 0f, 65.6f), V(34f, 0f, 67.4f), V(37f, 0f, 76f), V(37.8f, 0f, 84f) })
             MoitaCapim(++nm, c, V(2.8f, 0f, 2.6f));
+        CriarUICutscene();   // antes do gerador: a reação em cadeia é uma cutscene
         // gerador do holofote: explodir apaga a varredura da passarela
         var ger = new GameObject("T04_Gerador_Vigilia"); ger.transform.SetParent(tec); ger.transform.position = V(17f, 0f, 63.6f);
         var gerModelo = ModeloAlvo("T04_Gerador_Vigilia_Modelo", PH + "portable_generator/portable_generator_1k.fbx", V(17f, 0f, 63f), 0f, 0.9f, false, ger.transform, false);
         var fumGer = Fumaca(ger.transform, V(17f, 0.9f, 63f), "Fumaca_Gerador", false);
         var gerador = ger.AddComponent<Gerador>();
         gerador.prompt = "E — forçar o gerador (apaga o holofote)"; gerador.range = 2f;
-        gerador.explosao = Explosao(ger.transform, V(17f, 0.6f, 63f), "Explosao_Gerador", 1f);
-        gerador.som = Som(ger, AUD + "explosao.wav");
-        gerador.desligarAoExplodir = new[] { holofote, GameObject.Find("Luzes/Luz_Passarela"), fumGer.gameObject };
-        gerador.ligarAoExplodir = new GameObject[0];
-        gerador.mensagem = "O gerador explodiu: o holofote da passarela apagou.\nOs guardas continuam de lanterna — use o capim alto.";
+        gerador.desligarAoExplodir = new GameObject[0]; gerador.ligarAoExplodir = new GameObject[0];
+        // reação em cadeia: o gerador explode, o cabo leva a faísca até a passarela, o holofote estoura e um guarda cai
+        var evG = new List<Cutscene.Evento>(); var trG = new List<Cutscene.Tremor>();
+        ExplosaoCena(evG, trG, ger.transform, V(17f, 0.6f, 63f), "Explosao_Gerador", 1.3f, 1.0f);
+        ExplosaoCena(evG, trG, perigos, V(14.5f, 4.9f, 75f), "Explosao_Holofote", 1f, 2.7f);
+        evG.Add(new Cutscene.Evento { tempo = 1.1f, desligar = new[] { fumGer.gameObject, gerModelo } });
+        evG.Add(new Cutscene.Evento { tempo = 2.75f, desligar = new[] { holofote, GameObject.Find("Luzes/Luz_Passarela") } });
+        var fumHol = Fumaca(perigos, V(14.5f, 4.9f, 75f), "Fumaca_Holofote", false); fumHol.gameObject.SetActive(false);
+        var fumDestroco = Fumaca(ger.transform, V(17f, 0.3f, 63f), "Fumaca_Destroco_Gerador", false); fumDestroco.gameObject.SetActive(false);
+        evG.Add(new Cutscene.Evento { tempo = 1.4f, ligar = new[] { fumDestroco.gameObject } });
+        evG.Add(new Cutscene.Evento { tempo = 3.0f, ligar = new[] { fumHol.gameObject } });
+        var guardaCai = GameObject.Find("NPCs/Guarda_Vigilia_1").transform;
+        var cenaGer = NovaCutscene("Gerador_N3", new[] {
+            K(18.5f, 6.5f, 57.5f, 17f, 0.5f, 63.2f, 0.4f),
+            K(19.5f, 5.2f, 58.5f, 17f, 0.6f, 63.2f, 1.6f),
+            K(15f, 6.5f, 63f,     14.5f, 4.5f, 75f, 1.8f),
+            K(4f, 3f, 68f,        12f, 3f, 75f,    2.6f),
+        }, new[] {
+            F(0.2f, 1.0f, "<color=#FFC46B>NILO:</color> Agora!"),
+            F(3.0f, 4.6f, "<color=#B8B8B8>GUARDA:</color> O holofote! O que foi isso?!"),
+            F(4.7f, 6.4f, "<color=#9FE0FF>MARA (rádio):</color> Apagou tudo! Use o capim alto, Sabiá."),
+        });
+        cenaGer.eventos = evG.ToArray(); cenaGer.tremores = trG.ToArray();
+        cenaGer.movimentos = new[] { new Cutscene.Movimento { alvo = guardaCai, posicao = V(8.5f, 0.1f, 73.4f), rotacao = V(-85f, 180f, 0f), inicio = 2.9f, duracao = 0.8f, acelerar = true } };
+        gerador.cena = cenaGer;
         Ocupar(gerModelo);   // só o modelo: os limites das partículas são enormes
         Modelo("T07_Postes_energia", PH + "modular_electricity_poles/modular_electricity_poles_1k.fbx", V(44f, 0f, 78f), 0f, 1f, tec);
 
@@ -792,7 +813,6 @@ public static partial class ConstrutorNivel1
         Gatilho(tutorial, "Dica_Holofote", V(2f, 1.5f, 67f), V(1.5f, 3f, 6f), "Holofote da Vigília: se a luz pegar o Nilo, custa um coração.\nEspere a luz ir para o outro lado e passe.", 6f);
         Gatilho(tutorial, "Chegada_Estacao", V(37f, 1.5f, 89f), V(6f, 3f, 1.5f), "Área segura: estação de retransmissão. Use E junto à lixeira.", 5f);
 
-        CriarUICutscene();
         var abertura = NovaCutscene("Abertura_N3", new[] {
             K(0f, 9f, -6f,      0f, 0.5f, 26f,  1.2f),
             K(-2f, 2.6f, 14f,   0f, 1f, 21f,    4.5f),
@@ -987,10 +1007,16 @@ public static partial class ConstrutorNivel1
             K(35f, 9f, 99f,       60f, 18f, 132f,    4.2f),
         }, new[] {
             F(0.3f, 3.6f, "<color=#FFC46B>NILO:</color> Ivo ficou trabalhando. O posto está seguro."),
-            F(3.7f, 7.6f, "<color=#9FE0FF>MARA (rádio):</color> Daqui já dá para ver a antena. É o último trecho, Sabiá."),
-            F(6.6f, 8.1f, "FIM DO NÍVEL 4", true),
+            F(3.7f, 5.4f, "<color=#9FE0FF>MARA (rádio):</color> Daqui já dá para ver a antena. É o último trecho, Sabiá."),
+            F(5.6f, 8.0f, "<color=#C8F08C>IVO:</color> A Vigília explodiu a trilha da serra! Pega a minha moto no galpão e desce pela estrada velha!"),
+            F(8.1f, 9.6f, "FIM DO NÍVEL 4", true),
         });
         final.neblinaFim = 170f;
+        var evF = new List<Cutscene.Evento>(); var trF = new List<Cutscene.Tremor>();
+        ExplosaoCena(evF, trF, perigos, V(48f, 1.5f, 114f), "Explosao_Trilha_Serra", 2.2f, 5.0f);
+        ExplosaoCena(evF, trF, perigos, V(53f, 2f, 121f), "Explosao_Trilha_Serra_2", 1.6f, 5.5f);
+        final.eventos = evF.ToArray(); final.tremores = trF.ToArray();
+        final.tomadas[final.tomadas.Length - 1].duracao += 1.6f;
         terminal.cutsceneFinal = final;
         Marcadores();
         GarantirCatalogo();
@@ -1034,7 +1060,12 @@ public static partial class ConstrutorNivel1
         for (int i = 0; i < plataformas.Length; i++)
         {
             var q = plataformas[i];
-            Laje(subida, "Plataforma_Serra_" + (i + 1), V(q[0], q[4] / 2f, (q[1] + q[2]) / 2f), V(q[3], q[4], q[2] - q[1]), matRocha);
+            var laje = Laje(subida, "Plataforma_Serra_" + (i + 1), V(q[0], q[4] / 2f, (q[1] + q[2]) / 2f), V(q[3], q[4], q[2] - q[1]), matRocha);
+            if (i == plataformas.Length - 1) continue;   // a última é o pouso antes do fosso: fica firme
+            // a serra cede: as pedras afundam no espinheiro com o peso do Nilo e voltam depois
+            var ceder = laje.AddComponent<PedraQueAfunda>();
+            ceder.espera = 1.1f; ceder.profundidade = q[4] - 0.15f; ceder.velocidade = 2.2f; ceder.volta = 3f;
+            ceder.som = Som(laje, AUD + "deslize.wav");
         }
         // chão da subida tomado por espinheiro: cair custa um coração e volta ao pé da subida
         var pe = new GameObject("Subida_Retorno").transform; pe.SetParent(perigos); pe.position = V(0f, 0f, 50.5f);
@@ -1093,12 +1124,6 @@ public static partial class ConstrutorNivel1
         sentinela.raioAcordar = 0f;
         sentinela.objetivoDepois = "instalar o módulo na antena";
         sentinela.mensagemFim = "MARA (rádio): A sentinela parou e o portão abriu. Instale o módulo na antena.";
-        var expSent = Explosao(chefe, sentinela.transform.position + Vector3.up * 1.2f, "Explosao_Sentinela", 1.4f);
-        foreach (var ps in expSent.transform.parent.GetComponentsInChildren<ParticleSystem>(true)) { var mm = ps.main; mm.playOnAwake = true; }
-        var somExp = Som(expSent.transform.parent.gameObject, AUD + "explosao.wav"); somExp.playOnAwake = true;
-        expSent.transform.parent.gameObject.SetActive(false);
-        var ativ = new List<GameObject>(sentinela.ativarAoDesligar ?? new GameObject[0]) { expSent.transform.parent.gameObject };
-        sentinela.ativarAoDesligar = ativ.ToArray();
         var cantos = new[] { V(4.5f, 0f, 91f), V(21.5f, 0f, 91f), V(21.5f, 0f, 119f) };
         for (int i = 0; i < cantos.Length; i++)
         {
@@ -1138,7 +1163,7 @@ public static partial class ConstrutorNivel1
         Lanternas(new[] { new Vector2(0f, -8f), new Vector2(0f, 90f) }, 4.75f);
         Gatilho(tutorial, "Dica_Fosso", V(0f, 1.5f, 15f), V(8f, 3f, 1.5f), "O caminho junta tudo o que você já sabe. Fosso: salte.", 4f);
         Gatilho(tutorial, "Dica_Mirante", V(0f, 1.5f, 41.5f), V(8f, 3f, 1.5f), "Mirante: dá para ver o vale inteiro daqui. Respire.", 4f);
-        Gatilho(tutorial, "Dica_Subida", V(0f, 1.5f, 51.5f), V(8f, 3f, 1.5f), "Subida da serra: salte de pedra em pedra.\nQuando a poeira levantar, vem rajada de vento: espere no chão.", 6f);
+        Gatilho(tutorial, "Dica_Subida", V(0f, 1.5f, 51.5f), V(8f, 3f, 1.5f), "Subida da serra: as pedras cedem com o peso — não fique parado.\nQuando a poeira levantar, vem rajada de vento: salte entre uma rajada e outra.", 6f);
         Gatilho(tutorial, "Dica_Fosso2", V(0f, 4.9f, 70.5f), V(8f, 3f, 1.5f), "Do alto, salte o fosso correndo.", 3f);
         Gatilho(tutorial, "Dica_Regeneracao", V(0f, 1.5f, 91f), V(8f, 3f, 1.5f), "Área de regeneração: a cerca tem uma entrada aberta pela Vigília.\nFeche com E.", 6f);
 
@@ -1167,6 +1192,7 @@ public static partial class ConstrutorNivel1
             F(7.3f, 10.2f, "<color=#9FE0FF>MARA:</color> Quando ela bater e travar, tire as três baterias com E."),
         });
         UnityEventTools.AddPersistentListener(cenaChefe.aoComecar, sentinela.Acordar);
+        CenaSentinelaExplode(sentinela, "Sentinela_Explode_N5");
         var estacao = Object.FindAnyObjectByType<InteractableStation>(FindObjectsInactive.Include);
         UnityEventTools.AddVoidPersistentListener(estacao.onCompleted, cenaChefe.TocarCena);
         var final = NovaCutscene("Final_N5", new[] {
@@ -1229,17 +1255,17 @@ public static partial class ConstrutorNivel1
         Object.DestroyImmediate(painel.transform.Find("Lista").gameObject);
         painel.transform.Find("Titulo").GetComponent<UnityEngine.UI.Text>().text = "Fases";
         var voltar = painel.transform.Find("Botao_Voltar");
-        string[] nomes = { "1 — Trilha encoberta", "2 — Margem ferida", "3 — Corredor de caça", "4 — Posto das raízes", "5 — A antena" };
+        string[] nomes = { "1 — Trilha encoberta", "2 — Margem ferida", "3 — Corredor de caça", "4 — Posto das raízes", "4B — A estrada velha (moto)", "5 — A antena" };
         for (int i = 0; i < nomes.Length; i++)
         {
             var b = Object.Instantiate(voltar.gameObject, painel.transform);
             b.name = "Botao_Fase_" + (i + 1);
-            var rt = (RectTransform)b.transform; rt.anchoredPosition = new Vector2(0f, 190f - 88f * i); rt.sizeDelta = new Vector2(520f, 72f);
-            var txt = b.GetComponentInChildren<UnityEngine.UI.Text>(true); ((RectTransform)txt.transform).sizeDelta = new Vector2(520f, 72f);
+            var rt = (RectTransform)b.transform; rt.anchoredPosition = new Vector2(0f, 200f - 76f * i); rt.sizeDelta = new Vector2(520f, 64f);
+            var txt = b.GetComponentInChildren<UnityEngine.UI.Text>(true); ((RectTransform)txt.transform).sizeDelta = new Vector2(520f, 64f);
             int n = i + 1;
             TrocarAcao(b.GetComponent<UnityEngine.UI.Button>(), nomes[i], btn => UnityEventTools.AddIntPersistentListener(btn.onClick, mm.JogarFase, n));
         }
-        ((RectTransform)voltar).anchoredPosition = new Vector2(0f, -280f);
+        ((RectTransform)voltar).anchoredPosition = new Vector2(0f, -290f);
         painel.SetActive(false);
         mm.fasesPanel = painel;
         EditorUtility.SetDirty(mm);
@@ -1258,10 +1284,10 @@ public static partial class ConstrutorNivel1
     // ============================================================================================
     // Build: menu e as cinco fases, na ordem.
 
-    [MenuItem("Rastro do Dossel/Configurar build (menu + 5 fases)")]
+    [MenuItem("Rastro do Dossel/Configurar build (menu + 6 fases)")]
     public static void ConfigurarBuild()
     {
-        EditorBuildSettings.scenes = new[] { MenuPath, ScenePath, N2Path, N3Path, N4Path, N5Path }
+        EditorBuildSettings.scenes = new[] { MenuPath, ScenePath, N2Path, N3Path, N4Path, N4bPath, N5Path }
             .Select(p => new EditorBuildSettingsScene(p, true)).ToArray();
         Debug.Log("Build: " + string.Join(", ", EditorBuildSettings.scenes.Select(s => s.path)));
     }

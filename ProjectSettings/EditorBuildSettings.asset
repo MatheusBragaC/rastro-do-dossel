@@ -21,6 +21,9 @@ EditorBuildSettings:
     path: Assets/Scenes/Nivel4_PostoDasRaizes.unity
     guid: cf97315069e45d79681f9f921bbb6934
   - enabled: 1
+    path: Assets/Scenes/Nivel4B_EstradaVelha.unity
+    guid: 791d1c99cec432c06bdcac64a290fb50
+  - enabled: 1
     path: Assets/Scenes/Nivel5_AAntena.unity
     guid: 0c28fde57da3ee320936b2c898e44e97
   m_configObjects:

@@ -13,6 +13,7 @@ public class FollowCamera : MonoBehaviour
     public float keyTurnSpeed = 120f;    // graus por segundo com as setas
     public float smoothTime = 0.08f;
     public LayerMask obstacleMask;       // o que a câmera não atravessa (chão e rochas)
+    public bool seguirRumo;              // veículo: a câmera volta sozinha para trás do alvo
 
     private float yaw;
     private Vector3 velocity;
@@ -47,6 +48,8 @@ public class FollowCamera : MonoBehaviour
                 if (kb.rightArrowKey.isPressed) yaw += keyTurnSpeed * Time.deltaTime;
             }
         }
+
+        if (seguirRumo) yaw = Mathf.LerpAngle(yaw, target.eulerAngles.y, 3f * Time.deltaTime);
 
         Vector3 goal; Quaternion rotGoal;
         CalcularPose(out goal, out rotGoal);

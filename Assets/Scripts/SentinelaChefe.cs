@@ -36,6 +36,7 @@ public class SentinelaChefe : MonoBehaviour
     public AudioSource somDesligar;
     public GameObject[] ativarAoDesligar;
     public GameObject[] desativarAoDesligar;
+    public Cutscene cenaFim;              // opcional: explosão da máquina; a mensagem final vem depois dela
 
     [Header("Textos")]
     [TextArea] public string mensagemBateria = "Bateria retirada ({0}/{1}). Ela vai atacar mais rápido!";
@@ -214,6 +215,7 @@ public class SentinelaChefe : MonoBehaviour
         foreach (var go in desativarAoDesligar) if (go != null) go.SetActive(false);
         if (somDesligar != null) somDesligar.Play();
         GameManager.Instance.StationCompleted(objetivoDepois);
-        GameManager.Instance.ShowMessage(mensagemFim, 6f);
+        if (cenaFim != null) cenaFim.Tocar(() => GameManager.Instance.ShowMessage(mensagemFim, 6f));
+        else GameManager.Instance.ShowMessage(mensagemFim, 6f);
     }
 }

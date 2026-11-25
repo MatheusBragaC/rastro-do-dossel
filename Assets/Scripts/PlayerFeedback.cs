@@ -35,6 +35,8 @@ public class PlayerFeedback : MonoBehaviour
     private float stepTimer;
     private float interactTimer;
     private float hurtTimer;
+    private float airTimer;
+    public float airDelay = 0.15f;   // tempo sem chão antes de mostrar a pose de queda (emendas e degraus não piscam)
 
     /// Finalidade: obter o controlador, o Rigidbody e os renderers do Nilo. Entradas: nenhuma. Retorno: void.
     void Awake()
@@ -55,7 +57,9 @@ public class PlayerFeedback : MonoBehaviour
 
         Vector3 v = playerRb.linearVelocity;
         float speedX = new Vector2(v.x, v.z).magnitude;
-        bool grounded = player.IsGrounded;
+        // Chão para a animação: só sai dele num salto (subida rápida) ou após airDelay sem apoio.
+        airTimer = player.IsGrounded ? 0f : airTimer + Time.deltaTime;
+        bool grounded = player.IsGrounded || (airTimer < airDelay && v.y < 2f);
         if (interactTimer > 0f) interactTimer -= Time.deltaTime;
         if (hurtTimer > 0f)
         {

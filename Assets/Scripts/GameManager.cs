@@ -132,7 +132,7 @@ public class GameManager : MonoBehaviour
         CurrentState = State.Failed;
         player.controlEnabled = false;
         var rb = player.GetComponent<Rigidbody>();
-        rb.linearVelocity = Vector3.zero;
+        if (!rb.isKinematic) rb.linearVelocity = Vector3.zero;   // montado na moto já é cinemático
         rb.isKinematic = true;
         var feedback = player.GetComponent<PlayerFeedback>();
         if (feedback != null) feedback.PlayFail();
@@ -227,7 +227,7 @@ public class GameManager : MonoBehaviour
         CurrentState = State.Cutscene;
         player.controlEnabled = false;
         var rb = player.GetComponent<Rigidbody>();
-        rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+        if (!rb.isKinematic) rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
         promptText.text = "";
         messageBox.SetActive(false);
         messageTimer = 0f;
@@ -388,6 +388,7 @@ public class GameManager : MonoBehaviour
     /// já foi marcada. Retorno: void. Corpo: verde se feita; amarela se é a primeira pendente; cinza depois.
     private static void LinhaMissao(System.Text.StringBuilder sb, string texto, bool feita, ref bool atualMarcada)
     {
+        if (string.IsNullOrEmpty(texto)) return;   // fase sem estação (estrada velha)
         if (feita) sb.Append("<color=#8BE38B>[x] ").Append(texto).Append("</color>\n");
         else if (!atualMarcada) { sb.Append("<color=#FFD54A>[  ] ").Append(texto).Append("</color>\n"); atualMarcada = true; }
         else sb.Append("<color=#9AA0A6>[  ] ").Append(texto).Append("</color>\n");
@@ -411,7 +412,7 @@ public class GameManager : MonoBehaviour
     /// Corpo: formata StationsDone e stationsTotal no HUD.
     private void UpdateStationText()
     {
-        stationText.text = "Etapas " + StationsDone + "/" + stationsTotal;
+        stationText.text = stationsTotal > 0 ? "Etapas " + StationsDone + "/" + stationsTotal : "";
     }
 
     /// Finalidade: mostrar os corações restantes. Entradas: nenhuma. Retorno: void.

@@ -1,9 +1,11 @@
 using UnityEngine;
 
 // Gerador da Vigília (nível 3): com E, o Nilo força o gerador, que explode e apaga o que ele alimenta
-// (holofote, luzes, cerca). Usa a explosão de partículas feita pela equipe.
+// (holofote, luzes, cerca). Com uma cutscene ligada, a reação em cadeia é mostrada por ela (explosões e
+// objetos apagando ficam nos eventos da cena); sem cena, usa a explosão e as listas abaixo.
 public class Gerador : Interactable
 {
+    public Cutscene cena;
     public ParticleSystem explosao;
     public AudioSource som;
     public GameObject[] desligarAoExplodir;
@@ -16,11 +18,12 @@ public class Gerador : Interactable
     protected override bool Available { get { return !Explodiu; } }
 
     /// Finalidade: explodir o gerador. Entradas: nenhuma. Retorno: bool indicando se teve efeito.
-    /// Corpo: recusa repetição; toca a explosão e o som; desliga e liga os objetos indicados; mostra a mensagem.
+    /// Corpo: recusa repetição; com cena, só a toca; senão toca a explosão e o som; desliga e liga os objetos indicados; mostra a mensagem.
     public override bool Interact()
     {
         if (Explodiu) return false;
         Explodiu = true;
+        if (cena != null) { cena.Tocar(null); return true; }
         if (explosao != null) explosao.Play(true);
         if (som != null) som.Play();
         foreach (var g in desligarAoExplodir) if (g != null) g.SetActive(false);
